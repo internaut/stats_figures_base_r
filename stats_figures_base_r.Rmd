@@ -1,0 +1,123 @@
+---
+title: "Figures for statistics education made with base R graphics"
+author: "Markus Konrad"
+date: "`r Sys.Date()`"
+knit: (function(inputFile, encoding) { rmarkdown::render(inputFile, encoding = encoding, output_dir = "docs", output_file = "index.html") })
+output:
+  bookdown::html_document2:
+      number_sections: false
+      toc: true
+
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+
+TODO
+
+## Discrete distributions
+
+barplot formula notation
+
+expression
+
+expression w/ text (paste plus space, tilde for space)
+
+```{r, fig.width=10, fig.height=6}
+p <- 0.2
+x <- 0:10
+n <- 10
+y <- dbinom(x, n, p)
+
+barplot(y ~ x,
+        xlab = "x", ylab = expression(P(X == x)),
+        main = expression(paste("Binomial distribution ", X %~% ~ B(10, 0.2))))
+```
+
+substitute
+
+```{r, fig.width=10, fig.height=6}
+p <- 0.2
+x <- 0:10
+n <- 10
+y <- dbinom(x, n, p)
+
+barplot(y ~ x,
+        xlab = "x", ylab = expression(P(X == x)),
+        main = substitute(paste("Binomial distribution ", X %~% ~ B(n, p)), list(n=n, p=p)))
+```
+
+## Continuous distributions
+
+```{r, fig.width=10, fig.height=6}
+x <- seq(0, 3, by = 0.001)
+unit <- 100000
+m <- 0.6
+s <- 0.08
+y <- dlnorm(x, log(m))
+
+y <- y/sum(y)
+
+mu <- sum(x * y * unit)
+med <- max(x[cumsum(y) <= 0.5]) * unit
+
+addlabel <- function(x, y, label, col, xjust = 0.05) {
+    legend(x, y, label, text.col = col, box.col = "white", xjust = xjust, x.intersp = 0)
+}
+
+plot(x * unit, y, type = "l",
+     xlab = "Income in €", ylab = "Density",
+     main = "A fictious but typical income distribution")
+abline(v = c(med, mu), lty = "dashed", col = c("red", "blue"))
+addlabel(med, 0.001, paste("Median:", med, "€"), "red")
+addlabel(mu, 0.0008, paste("Arith. mean:", round(mu), "€"), "blue")
+```
+
+
+multiple graphics
+
+better use "stick plot" (?)
+
+```{r, fig.width=10, fig.height=6}
+p <- 0.5
+
+xlim <- list(
+    "10" = c(0, 10),
+    "100" = c(35, 65),
+    "1000" = c(450, 550)
+)
+
+lwd <- list(
+    "10" = 5,
+    "100" = 3,
+    "1000" = 1
+)
+
+
+lastn <- 0
+for (n in c(10, 100, 1000, 1000)) {
+    x <- 0:n
+    y <- dbinom(x, n, p)
+    k <- as.character(n)
+
+    plot(x, y, type = "h", lwd = lwd[[k]],
+         xlab = 'x – Number of "heads"', ylab = expression(P(X == x)),
+         main = sprintf("Binomial distribution for %d coin flips", n),
+         xlim = xlim[[k]])
+
+    if (lastn == 1000) {
+        mu <- n*p
+        sigma <- n*p/sqrt(n)
+        f <- function(x) { dnorm(x, mean = mu, sd = sigma) }
+        curve(f, xlim[[k]][1], xlim[[k]][2], add = TRUE, col = "red")
+        legend(510, 0.025, substitute(paste("Normal distribution ", N(mu, sigma)), list(mu=mu, sigma=round(sigma, 2))),
+               lty = "solid", col = "red", cex = 0.75)
+    }
+
+    lastn <- n
+}
+```
+
