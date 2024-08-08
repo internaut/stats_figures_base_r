@@ -289,6 +289,65 @@ axis(1, at = -3:3, labels = expression(mu - 3 * sigma,
                                        mu + 3 * sigma))
 ```
 
+### Density function, distribution function, quantile function and random number generator (plotting random points under a curve)
+
+```{r}
+x <- seq(-4, 4, length = 1000)
+y <- dnorm(x)
+plot(x, y, type = "l",
+     main = "Density function f(x) of the standard normal distribution:\ndnorm(x)",
+     xlab = "x", ylab = "f(x)")
+```
+
+```{r}
+x <- seq(-4, 4, length = 1000)
+y <- pnorm(x)
+plot(x, y, type = "l",
+     main = "Distribution function F(x) of the standard normal distribution:\npnorm(x)",
+     xlab = "x", ylab = "F(x)")
+```
+
+```{r}
+x <- seq(-4, 4, length = 1000)
+y <- pnorm(x)
+plot(x, y, type = "l",
+     main = "Distribution function F(x) of the standard normal distribution:\npnorm(x)",
+     xlab = "x", ylab = "F(x)")
+p <- 0.9
+q <- qnorm(0.9)
+segments(-4, p, q, p, lty = "dashed", col = "red")
+segments(q, p, q, 0, lty = "dashed", col = "red")
+text(-3.5, p, paste("F(x) =", p), pos = 3, col = "red")
+text(q, 0, paste("For which x?"), pos = 4, col = "red")
+```
+
+```{r}
+x <- seq(0, 1, length = 1000)
+y <- qnorm(x)
+plot(x, y, type = "l",
+     main = expression(paste("Quantile function ", F^{-1} * (x), " of the standard normal distribution: qnorm(x)")),
+     xlab = "x", ylab = expression(F^{-1} * (x)))
+```
+
+```{r}
+set.seed(20231206)
+x <- rnorm(1000)
+n <- length(x)
+d <- density(x)
+
+# for each generated x_i, find the corresponding value of the density curve; this allows to generate a random
+# y-coordinate that fits under the density curve
+max_y <- sapply(x, function(x_i) {
+    d$y[min(which(x_i < d$x))]
+})
+
+plot(d, main = paste(n, "randomly sampled values from the standard normal distribution"),
+     xlab = "x", ylab = "Density")
+points(x, y = runif(n, 0, max_y), col = rgb(0, 0, 0, 0.5))
+```
+
+
+
 ## Sampling distributions and central limit theorem
 
 ### Visualizing different sample draws and estimation errors (`dotchart()`, math. expressions, legends)
@@ -524,4 +583,337 @@ for (gamma in c(0.8, 0.95, 0.99)) {   # confidence levels
 }
 ```
 
+## Student's t distribution
+
+```{r}
+curve(dnorm, lwd = 2, n = 1001, from = -5, to = 5,
+      lty = "dashed",
+      main = expression(paste(italic(t), " distributions and the standard normal distribution")),
+      xlab = "x",
+      ylab = "f(x)")
+
+nvals <- c(2, 5, 15)
+legend_labels <- c("N(0, 1)")
+legend_col <- c(gray(0))
+legend_lty <- c("dashed")
+
+for (i in 1:length(nvals)) {
+    n <- nvals[i]
+    col <- gray(1-0.2*i)
+
+    f <- function(x) { dt(x, n) }
+    curve(f, lwd = 2, n = 1001, from = -5, to = 5, add = TRUE, col = col)
+    legend_labels <- c(legend_labels, sprintf("t(%d)", n))
+    legend_col <- c(legend_col, col)
+    legend_lty <- c(legend_lty, "solid")
+}
+
+legend("topright", legend_labels, col = legend_col, lty = legend_lty)
+```
+
+## Hypothesis testing
+
+### One-sample tests
+
+```{r}
+mu <- 17
+X <- c(16.4, 19.4, 17.8, 16.4, 18.5, 19.0, 19.5, 17.1, 16.1)
+Xbar <- mean(X)
+n <- length(X)
+sigma <- 1.5 / sqrt(n)
+z <- qnorm(c(0.025, 0.975), mean = Xbar, sd = sigma)
+confint <- paste0(round(z, 2), "cm")
+plot(X, runif(n), ylim = c(-0.5, 1.5), yaxt = "n",
+     ylab = "", xlab = "Pencil length in cm",
+     main = "Random sample of pencil lengths and 95% confidence interval")
+abline(h = 0.5)
+abline(v = mu, lty = "dashed")
+text(mu, -0.45, expression(mu), adj = -0.5)
+segments(z[1], -0.1, z[2], -0.1, col = "red")
+segments(z[1], -0.05, z[1], -0.15, col = "red")
+segments(z[2], -0.05, z[2], -0.15, col = "red")
+segments(Xbar, -0.05, Xbar, -0.15, col = "red")
+text(c(z, Xbar), 0.075, c(confint, paste0(Xbar, "cm")), col = "red")
+text(Xbar, -0.45, expression(bar(X)), col = "red")
+```
+
+```{r}
+X <- c(16.4, 19.4, 17.8, 16.4, 18.5, 19.0, 19.5, 17.1, 16.1)
+Xbar <- mean(X)
+mu <- 17
+n <- length(X)
+sigma <- 1.5 / sqrt(n)
+z <- qnorm(c(0.025, 0.975), mean = mu, sd = sigma)
+p <- 1-pnorm(Xbar, mu, sigma)
+x <- seq(15, 19, length = 1001)
+y <- dnorm(x, mu, sigma)
+plot(x, y, type = "l", xlab = "Pencil length in cm", ylab = "f(x)",
+     main = expression(paste("Distribution of ", bar(X), " around ", mu, "=17cm under ", H[0],
+                             " (", sigma, "=1.5cm and n=9)")))
+
+iv <- x < z[1]
+polygon(c(x[iv][1], x[iv], max(x[iv])),
+        c(0, y[iv], 0),
+        col = "#aaaaaa50", border = FALSE)
+iv <- x > z[2]
+polygon(c(x[iv][1], x[iv], max(x[iv])),
+        c(0, y[iv], 0),
+        col = "#aaaaaa50", border = FALSE)
+abline(v = z, lty = "dashed", col = "#00000066")
+abline(v = mu, lty = "dashed", col = "#000000DD")
+text(mu, 0, expression(mu), adj = -0.25)
+
+iv <- x >= Xbar
+polygon(c(x[iv][1], x[iv], max(x[iv])),
+        c(0, y[iv], 0),
+        col = "#ff000050", border = FALSE)
+abline(v = Xbar, lty = "dashed", col = "red")
+
+text(Xbar, 0.15, substitute(P(bar(X) >= Xbar) == p,
+                            list(Xbar=Xbar, p=sprintf("%.1f%%", p*100))),
+     adj = -0.02, col = "red")
+text(c(mu, z[2]), 0.035, c("95%", "2.5%"), adj = -0.25)
+text(z[1], 0.035, "2.5%", adj = 1.25)
+```
+
+```{r}
+X <- c(16.4, 19.4, 17.8, 16.4, 18.5, 19.0, 19.5, 17.1, 16.1)
+Xbar <- mean(X)
+mu <- 17
+n <- length(X)
+sigma <- 1.5 / sqrt(n)
+x <- seq(15, 19, length = 1001)
+y <- dnorm(x, mu, sigma)
+z <- qnorm(c(0.025, 0.975), mean = Xbar, sd = sigma)
+konfint <- paste0(round(z, 2), "cm")
+
+plot(x, y, type = "l", xlab = "Pencil length in cm", ylab = "f(x)",
+     main = expression(paste("Distribution of ", bar(X), " around ", mu, "=17cm under ", H[0],
+                             " (", sigma, "=1.5cm and n=9)")))
+abline(v = mu, lty = "dashed")
+text(mu, 0.1, expression(mu), adj = -0.5)
+segments(z[1], -0.015, z[2], -0.015, col = "red")
+segments(z[1], -0.01, z[1], -0.02, col = "red")
+segments(z[2], -0.01, z[2], -0.02, col = "red")
+segments(Xbar, -0.01, Xbar, -0.02, col = "red")
+text(c(z, Xbar), 0.025, c(konfint, paste0(Xbar, "cm")), col = "red")
+text(Xbar, 0.07, expression(bar(X)), col = "red")
+```
+
+```{r}
+x <- seq(-4, 4, length = 1001)
+y <- dnorm(x)
+plot(x, y, type = "l", xlab = "", ylab = "Density",
+     main = expression(paste("One-sided test: Alternative hypothesis is ", mu < mu[0])),
+     xaxt = "n")
+p <- 0.3
+z <- qnorm(p)
+abline(v = 0, lty = "dashed")
+segments(z, 0, z, dnorm(z), lty = "dashed")
+axis(1, c(0, z), labels = c(expression(mu[0]), expression(bar(x))))
+
+iv <- x < z
+polygon(c(x[iv][1], x[iv], max(x[iv])),
+        c(0, y[iv], 0),
+        col = "#aaaaaa50", border = FALSE)
+text(-1.5, 0.01, expression(P(bar(X) <= bar(x))))
+```
+
+```{r}
+plot(x, y, type = "l", xlab = "", ylab = "Density",
+     main = expression(paste("One-sided test: Alternative hypothesis is ", mu > mu[0])),
+     xaxt = "n")
+abline(v = 0, lty = "dashed")
+segments(z, 0, z, dnorm(z), lty = "dashed")
+axis(1, c(0, z), labels = c(expression(mu[0]), expression(bar(x))))
+
+iv <- x > z
+polygon(c(x[iv][1], x[iv], max(x[iv])),
+        c(0, y[iv], 0),
+        col = "#aaaaaa50", border = FALSE)
+text(1.3, 0.01, expression(P(bar(X) >= bar(x))))
+```
+
+```{r}
+x <- seq(-4, 4, length = 1001)
+y <- dnorm(x)
+plot(x, y, type = "l", xlab = "", ylab = "Density",
+     main = expression(paste("Two-sided test: Sample mean is ", bar(x) < mu[0])),
+     xaxt = "n")
+p <- 0.3
+z <- qnorm(p)
+abline(v = 0, lty = "dashed")
+segments(z, 0, z, dnorm(z), lty = "dashed")
+axis(1, c(0, z), labels = c(expression(mu[0]), expression(bar(x))))
+
+iv <- x < z
+polygon(c(x[iv][1], x[iv], max(x[iv])),
+        c(0, y[iv], 0),
+        col = "#aaaaaa50", border = FALSE)
+text(-1.5, 0.01, expression(P(bar(X) <= bar(x))))
+```
+
+```{r}
+x <- seq(-4, 4, length = 1001)
+y <- dnorm(x)
+plot(x, y, type = "l", xlab = "", ylab = "Density",
+     main = expression(paste("Two-sided test: Sample mean is ", bar(x) > mu[0])),
+     xaxt = "n")
+abline(v = 0, lty = "dashed")
+z <- qnorm(1-p)
+segments(z, 0, z, dnorm(z), lty = "dashed")
+axis(1, c(0, z), labels = c(expression(mu[0]), expression(bar(x))))
+
+iv <- x > z
+polygon(c(x[iv][1], x[iv], max(x[iv])),
+        c(0, y[iv], 0),
+        col = "#aaaaaa50", border = FALSE)
+text(1.3, 0.01, expression(P(bar(X) >= bar(x))))
+```
+
+```{r}
+n <- 100
+p <- 0.1
+k <- 12
+p_less_k <- round(pbinom(11, 100, 0.1), 3)
+p_ge_k <- 1 - p_less_k
+subst_params <- list(p_less_k=p_less_k, p_ge_k=p_ge_k)
+x <- 0:100
+y <- dbinom(x, n, p)
+
+barcols <- ifelse(x >= k, "orange", "gray")
+barplot(y ~ x, axis.lty = 1, col = barcols,
+        xlab = "Number x of waste items",
+        ylab = "Probability P(X=x)",
+        main = "Probability of number of waste items under the null hypothesis")
+legend("topright",
+       c(expression(paste("Number of waste items " < 12)),
+         expression(paste("Number of waste items " >= 12))),
+       fill = c("gray", "orange"))
+text(34, 0.04, substitute(P(X >= 12) == p, list(p = p_ge_k)), adj = 0)
+arrows(33, 0.039, 20, 0.03, length = 0.1)
+```
+
+
+```{r}
+x <- 0:100
+y <- pbinom(x, n, p)
+
+barcols <- ifelse(x == k - 1, "red", "gray")
+barplot(y, names.arg = as.character(x), axis.lty = 1,
+        col = barcols,
+        xlab = "Number x of waste items",
+        ylab = expression(paste("Probability ", P(X <= x))),
+        main = "Probability of number of waste items under the null hypothesis")
+
+legend("topright",
+       expression(paste("Probability ", P(X <= 11))),
+       fill = "red")
+```
+
+### Two-sample tests
+
+```{r}
+pgreduced <- PlantGrowth[PlantGrowth$group != "trt1", ]
+pgreduced$group <- factor(pgreduced$group)
+boxplot(weight ~ group, data = pgreduced,
+        xlab = "Group", ylab = "Dried weight of plants in kg",
+        main = "Plant growth experiment")
+```
+
+```{r}
+ctrl <- pgreduced$group == "ctrl"
+w_ctrl <- pgreduced$weight[ctrl]
+w_trt2 <- pgreduced$weight[!ctrl]
+
+xbar <- mean(w_trt2)
+ybar <- mean(w_ctrl)
+nx <- length(w_trt2)
+ny <- length(w_ctrl)
+se_x <- sd(w_trt2) / sqrt(nx)
+se_y <- sd(w_ctrl) / sqrt(ny)
+
+x <- seq(4, 6.5, length = 1001)
+y_trt2 <- dnorm(x, mean = xbar, sd = se_x)
+plot(w_trt2, runif(nx, 0, 0.1), col = "darkred", xlim = c(min(x), max(x)), ylim = c(0, 3),
+     xlab = "Dried weight of plants in kg", ylab = "Density",
+     main = "Plant growth experiment\nDistribution of sample means")
+points(w_ctrl, runif(ny, 0, 0.1), col = "blue")
+lines(x, y_trt2, col = "darkred")
+abline(v = xbar, lty = "dashed", col = "darkred")
+text(xbar, 0.15, substitute(bar(X) == xbar, list(xbar = paste0(xbar, "kg"))), pos = 4, col = "darkred")
+y_ctrl <- dnorm(x, mean = ybar, sd = se_y)
+lines(x, y_ctrl, col = "blue")
+abline(v = ybar, lty = "dashed", col = "blue")
+text(ybar, 0.15, substitute(bar(Y) == ybar, list(ybar = paste0(ybar, "kg"))), pos = 2, col = "blue")
+legend("topright", c("X: treatment", "Y: control"),
+       lty = "solid", col = c("darkred", "blue"))
+```
+
+```{r}
+w_ttest_res <- t.test(w_trt2, w_ctrl, alternative = "greater")
+se <- w_ttest_res$stderr
+d <- w_trt2 - w_ctrl
+d_tscale <- d / se
+dbar <- mean(d)
+dbar_tscale <- dbar / se
+xmin <- floor(min(d_tscale)) - 1
+xmax <- ceiling(max(d_tscale))
+
+x <- seq(xmin, xmax, length.out = 1001)
+y <- dt(x, w_ttest_res$parameter)
+plot(x, y, type = "l", xaxt = "n",
+     xlab = expression(paste("Difference ", bar(X) - bar(Y), " in kg")),
+     ylab = "Density",
+     main = expression(paste("Distribution of the difference ", bar(X) - bar(Y),
+                             " under ", H[0], ": ", mu[X] - mu[Y] <= 0)))
+xaxt_labels <- seq(floor(xmin*se), ceiling(xmax*se), by = 0.5)
+xaxt_labels_pos <- xaxt_labels/se
+axis(1, at = xaxt_labels_pos, labels = xaxt_labels)
+points(d_tscale, runif(length(d_tscale), 0, 0.01), col = "red")
+abline(v = 0, lty = "dashed")
+text(0, 0.025, expression(mu[X] - mu[Y] == 0), pos = 4)
+abline(v = dbar_tscale, lty = "dashed", col = "red")
+iv <- x >= dbar_tscale
+polygon(c(x[iv][1], x[iv], max(x[iv])),
+        c(0, y[iv], 0),
+        col = "#ff000080", border = FALSE)
+text(dbar_tscale + 0.25, 0.025, substitute(P(bar(X) - bar(Y) > dbar) == p,
+                                           list(dbar = paste0(dbar, "kg"),
+                                                p = round(w_ttest_res$p.value, 4))),
+     pos = 4, col = "red")
+```
+
+```{r}
+x <- seq(xmin, xmax, length.out = 1001)
+y <- dt(x, w_ttest_res$parameter)
+plot(x, y, type = "l",
+     xlab = "t",
+     ylab = "Density",
+     main = expression(paste(italic(t), " distribution under ", H[0], ": ", mu[X] - mu[Y] <= 0)))
+points(d_tscale, runif(length(d), 0, 0.01), col = "red")
+abline(v = 0, lty = "dashed")
+text(0, 0.025, expression(mu[X] - mu[Y] == 0), pos = 4)
+abline(v = dbar_tscale, lty = "dashed", col = "red")
+iv <- x >= dbar_tscale
+polygon(c(x[iv][1], x[iv], max(x[iv])),
+        c(0, y[iv], 0),
+        col = "#ff000080", border = FALSE)
+text(dbar_tscale + 0.25, 0.025, substitute(1-P(t < tval) == pval,
+                                           list(dbar = paste0(dbar, "kg"),
+                                                tval = round(w_ttest_res$statistic, 4),
+                                                pval = round(w_ttest_res$p.value, 4))),
+     pos = 4, col = "red")
+```
+
+```{r}
+alpha <- 0.05
+m <- 1:25
+y <- 1-(1-alpha)^m
+
+plot(m, y,
+     main = substitute(paste("Error rate for multiple tests with ", alpha==a), list(a=alpha)),
+     xlab = "Number of tests", ylab = "Probability of type I error")
+lines(m, y)
+```
 
