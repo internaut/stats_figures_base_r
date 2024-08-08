@@ -7,6 +7,9 @@ output:
   bookdown::html_document2:
       number_sections: false
       toc: true
+      fig_width: 10
+      fig_height: 6
+      fig_align: "center"
 
 ---
 
@@ -18,7 +21,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 TODO
 
-## Discrete distributions
+## Binomial distribution (barplots, formula notation, math. expressions)
 
 barplot formula notation
 
@@ -26,7 +29,7 @@ expression
 
 expression w/ text (paste plus space, tilde for space)
 
-```{r, fig.width=10, fig.height=6}
+```{r}
 p <- 0.2
 x <- 0:10
 n <- 10
@@ -39,7 +42,7 @@ barplot(y ~ x,
 
 substitute
 
-```{r, fig.width=10, fig.height=6}
+```{r}
 p <- 0.2
 x <- 0:10
 n <- 10
@@ -50,9 +53,9 @@ barplot(y ~ x,
         main = substitute(paste("Binomial distribution ", X %~% ~ B(n, p)), list(n=n, p=p)))
 ```
 
-## Continuous distributions
+## Log normal distribution as example of a skewed distribution (`abline()` for vertical lines, `legend()` for text labels)
 
-```{r, fig.width=10, fig.height=6}
+```{r}
 x <- seq(0, 3, by = 0.001)
 unit <- 100000
 m <- 0.6
@@ -70,18 +73,19 @@ addlabel <- function(x, y, label, col, xjust = 0.05) {
 
 plot(x * unit, y, type = "l",
      xlab = "Income in €", ylab = "Density",
-     main = "A fictious but typical income distribution")
+     main = "A fictitious but typical income distribution")
 abline(v = c(med, mu), lty = "dashed", col = c("red", "blue"))
 addlabel(med, 0.001, paste("Median:", med, "€"), "red")
-addlabel(mu, 0.0008, paste("Arith. mean:", round(mu), "€"), "blue")
+addlabel(mu, 0.0008, paste("Mean:", round(mu), "€"), "blue")
 ```
 
+## From binomial to normal distribution (multiple plots, `curve()`, `legend()`)
 
 multiple graphics
 
 better use "stick plot" (?)
 
-```{r, fig.width=10, fig.height=6}
+```{r}
 p <- 0.5
 
 xlim <- list(
@@ -113,11 +117,411 @@ for (n in c(10, 100, 1000, 1000)) {
         sigma <- n*p/sqrt(n)
         f <- function(x) { dnorm(x, mean = mu, sd = sigma) }
         curve(f, xlim[[k]][1], xlim[[k]][2], add = TRUE, col = "red")
-        legend(510, 0.025, substitute(paste("Normal distribution ", N(mu, sigma)), list(mu=mu, sigma=round(sigma, 2))),
+        legend(510, 0.025, substitute(paste("Normal distribution ", N(mu, sigma)),
+                                      list(mu=mu, sigma=round(sigma, 2))),
                lty = "solid", col = "red", cex = 0.75)
     }
 
     lastn <- n
 }
 ```
+
+
+## Continuous uniform distribution (line segments with `segments()`, area under the curve with `polygon()`)
+
+```{r}
+a <- 0
+b <- 10
+y <- 1/(b-a)
+
+plot(c(a, b), c(y, y), xlim = c(a-1, b+1), ylim = c(0, y*1.1), pch = 16,
+     xlab = "Waiting time in minutes", ylab = "Density",
+     main = "Density function of the waiting time")
+segments(a-1, 0, a, 0)
+segments(a, 0, a, y, lty = "dashed")
+segments(a, y, b, y)
+segments(b, y, b, 0, lty = "dashed")
+segments(b, 0, b+1, 0)
+```
+
+
+```{r}
+a <- 0
+b <- 10
+y <- 1/(b-a)
+
+x1 <- 7.5
+x2 <- 10
+
+plot(c(a, b), c(y, y), xlim = c(a-1, b+1), ylim = c(0, y*1.1), pch = 16,
+     xlab = "Waiting time in minutes", ylab = "Density",
+     main = "Density function of the waiting time")
+
+polygon(c(x1, x1, x2, x2, x1), c(0, y, y, 0, 0), col = "lightgray", border = FALSE)
+
+text(x1 + (x2 - x1) / 2, y/2, substitute(P(a <= ~X <= b), list(a=x1, b=x2)), cex = 0.75)
+
+segments(a-1, 0, a, 0)
+segments(a, 0, a, y, lty = "dashed")
+segments(a, y, b, y)
+segments(b, y, b, 0, lty = "dashed")
+segments(b, 0, b+1, 0)
+```
+
+## Normal distribution
+
+### Normal distributions with different parameters ("empty" plots, styles, legends)
+
+```{r}
+param <- list(
+    c(0, 1),
+    c(0, 0.5),
+    c(0, 2),
+    c(2, 1),
+    c(-1, 0.4)
+)
+
+styles <- list(
+    c("solid", "darkred"),
+    c("solid", "coral"),
+    c("solid", "red"),
+    c("dashed", "darkred"),
+    c("dotted", "orange")
+)
+
+for (maxshow in 1:length(param)) {
+    plot(NULL, xlim = c(-5, 5), ylim = c(0, 1.0),
+         main = "Normal distributions",
+         xlab = "x",
+         ylab = "f(x)")
+
+    legend_labels <- character()
+    legend_lty <- character()
+    legend_col <- character()
+    for (i in 1:maxshow) {
+        p <- param[[i]]
+        m <- p[1]
+        s <- p[2]
+        k <- sprintf("m%.1f_s%.1f", m, s)
+
+        linest <- styles[[i]]
+
+        f <- function(x) { dnorm(x, mean = m, sd = s) }
+        curve(f, lwd = 3, lty = linest[1], col = linest[2], n = 1001, add = TRUE)
+
+        legend_labels <- append(legend_labels, sprintf("N(%.1f, %.1f)", m , s))
+        legend_lty <- append(legend_lty, linest[1])
+        legend_col <- append(legend_col, linest[2])
+    }
+
+    legend("topright", legend_labels, lty = legend_lty, col = legend_col)
+}
+```
+
+### Standard normal distribution (`curve()`)
+
+```{r}
+curve(dnorm, lwd = 2, n = 1001, from = -3, to = 3,
+      main = "Standard normal distribution N(0, 1)",
+      xlab = "Standard unit z",
+      ylab = "f(z)")
+```
+
+### Example of a normal distribution (`curve()`)
+
+```{r}
+f <- function(x) { dnorm(x, mean = 10, sd = 8) }
+curve(f, lwd = 2, n = 1001, from = -15, to = 35,
+      main = "Temperature normally distrubted as N(10°C, 8°C)",
+      xlab = "Temperature x in °C",
+      ylab = "f(x)")
+```
+
+### Standard normal distribution: areas under the curve (area under the curve with `polygon()`, annotations with `arrows()`)
+
+```{r}
+x <- seq(-3.5, 3.5, length = 1001)
+y <- dnorm(x)
+plot(x, y, ylim = c(0, 0.6), type = "l",
+     xlab = "z", ylab = "f(z)", main = "Standard normal distribution N(0, 1)")
+
+for (z in 1:3) {
+    iv <- x >= -z & x <= z
+    polygon(c(x[iv][1], x[iv], max(x[iv])),
+            c(0, y[iv], 0),
+            col = "#aaaaaa50", border = FALSE)
+    abline(v = c(-z, z), lty = "dashed", col = paste0("#000000", c("FF", "AA", "66")[z]))
+    y_segm <- 0.38 + 0.055 * z
+    arrows(-z, y_segm, z, y_segm, code = 3, length = 0.1)
+    text(0, y_segm, paste0(round((1-pnorm(-z) * 2) * 100, 1), "%"), adj = c(0.5, -0.2))
+}
+```
+
+
+### Normal distribution (math. expressions)
+
+```{r}
+x <- seq(-3.5, 3.5, length = 1001)
+y <- dnorm(x)
+plot(x, y, ylim = c(0, 0.6), type = "l",
+     xlab = "x", ylab = "f(x)",
+     main = expression(paste("Normal distribution ", N(mu, sigma))),
+     xaxt = "n")
+
+for (z in 1:3) {
+    iv <- x >= -z & x <= z
+    polygon(c(x[iv][1], x[iv], max(x[iv])),
+            c(0, y[iv], 0),
+            col = "#aaaaaa50", border = FALSE)
+    abline(v = c(-z, z), lty = "dashed", col = paste0("#000000", c("FF", "AA", "66")[z]))
+    y_segm <- 0.38 + 0.055 * z
+    arrows(-z, y_segm, z, y_segm, code = 3, length = 0.1)
+    text(0, y_segm, paste0(round((1-pnorm(-z) * 2) * 100, 1), "%"), adj = c(0.5, -0.2))
+}
+
+xticks <- -3:3
+axis(1, at = -3:3, labels = expression(mu - 3 * sigma,
+                                       mu - 2 * sigma,
+                                       mu - sigma,
+                                       mu,
+                                       mu + sigma,
+                                       mu + 2 * sigma,
+                                       mu + 3 * sigma))
+```
+
+## Sampling distributions and central limit theorem
+
+### Visualizing different sample draws and estimation errors (`dotchart()`, math. expressions, legends)
+
+```{r}
+set.seed(20231024)
+
+d <- read.table('data/miete03.asc', header = TRUE)
+
+rent <- d$nm
+mu <- mean(rent)
+
+n <- length(rent)
+
+hist(rent, main = "Histogram of the rent", freq = FALSE,
+     sub = paste("n =", n), xlab = "Rent in €", ylab = "Probability")
+abline(v = mu, lty = 'dashed', col = 'red')
+text(mu, 0.0017, expression(mu), adj = c(-0.5, 0), col = 'red')
+```
+
+
+```{r}
+n <- 30
+m <- 10
+
+hat_mu_i <- sapply(1:m, function(i) {
+    mean(sample(rent, n))
+})
+
+dotchart(hat_mu_i, labels = as.character(1:m), xlab = "Rent in €", ylab = "Sample",
+         main = substitute(
+             paste("Sample means ", hat(mu)[i], " for ", m, " samples of size n=", n),
+             list(m=m, n=n)
+        ))
+abline(v = mu, lty = 'dashed', col = 'red')
+text(mu, 0.5, expression(mu), adj = c(-0.5, 0), col = 'red')
+mean_hat_mu <- mean(hat_mu_i)
+abline(v = mean_hat_mu, lty = 'dashed', col = 'blue')
+text(mean_hat_mu, 0.5, expression(bar(hat(mu))), adj = c(-0.5, 0), col = 'blue')
+```
+```{r}
+n <- 30
+m <- 10000
+
+hat_mu_i <- sapply(1:m, function(i) {
+    mean(sample(rent, n))
+})
+
+hist(hat_mu_i, freq = FALSE, xlab = "Rent in €", ylab = "Probability",
+     main = substitute(
+         paste("Histogram of sample means for ", m, " samples of size n=", n),
+         list(m=m, n=n)
+     )
+)
+
+abline(v = mu, lty = "solid", col = 'red')
+text(mu, 0, expression(mu), adj = c(-0.5, 0), col = 'red')
+mean_hat_mu <- mean(hat_mu_i)
+abline(v = mean_hat_mu, lty = 'dashed', col = 'blue')
+text(mean_hat_mu, 0.0005, expression(bar(hat(mu))), adj = c(-0.5, 0), col = 'blue')
+
+e <- round(abs(mean_hat_mu - mu), 2)
+text(mean_hat_mu, 0.0085, expression(abs(paste(" ", bar(hat(mu)) - mu, " "))), adj = c(-1, 0))
+text(mean_hat_mu, 0.0085, paste0("= ", e, "€"), adj = c(-2.2, -0.2))
+```
+
+
+```{r}
+m <- 10000
+se_per_samplesize <- numeric()
+samplesizes <- integer()
+
+for (n in c(15, 30, 100, 1000)) {
+    hat_mu_i <- sapply(1:m, function(i) {
+        mean(sample(rent, n))
+    })
+
+    hist(hat_mu_i, freq = FALSE, xlab = "Rent in €", ylab = "Probability",
+         main = substitute(
+             paste("Histogram of sample means for ", m, " samples of size n=", n),
+             list(m=m, n=n)
+         ),
+         breaks = seq(200, 940, by = 5)
+    )
+
+    se_per_samplesize <- c(se_per_samplesize, sd(hat_mu_i))
+    samplesizes <- c(samplesizes, n)
+}
+```
+```{r}
+plot(samplesizes, se_per_samplesize, type = "p",
+     main = "Estimation error of the rent by sample size",
+     xlab = "Sample size",
+     ylab = "Standard error in €")
+nrange <- min(samplesizes):max(samplesizes)
+se_theoretic <- sd(rent) / sqrt(nrange)
+lines(nrange, se_theoretic, lty = 'dashed', col = 'red')
+legend("topright", c("Empirical standard error", "Theoretic standard error"),
+       pch = c(1, NA_integer_), lty = c(NA_integer_, 2), col = c("black", "red"))
+```
+
+### Distribution of the sample mean $\overline X$ (math. expressions)
+
+```{r}
+x <- seq(-3.5, 3.5, length = 1001)
+y <- dnorm(x)
+plot(x, y, ylim = c(0, 0.6), type = "l",
+     xlab = "x", ylab = "f(x)",
+     main = expression(paste("Distribution of the sample mean ", bar(X) %~% ~ N(mu, sigma[bar(X)]))),
+     xaxt = "n")
+
+for (z in 1:3) {
+    iv <- x >= -z & x <= z
+    polygon(c(x[iv][1], x[iv], max(x[iv])),
+            c(0, y[iv], 0),
+            col = "#aaaaaa50", border = FALSE)
+    abline(v = c(-z, z), lty = "dashed", col = paste0("#000000", c("FF", "AA", "66")[z]))
+    y_segm <- 0.38 + 0.055 * z
+    arrows(-z, y_segm, z, y_segm, code = 3, length = 0.1)
+    text(0, y_segm, paste0(round((1-pnorm(-z) * 2) * 100, 1), "%"), adj = c(0.5, -0.2))
+}
+
+xticks <- -3:3
+axis(1, at = -3:3, labels = expression(mu - 3 * sigma[bar(X)],
+                                       mu - 2 * sigma[bar(X)],
+                                       mu - sigma[bar(X)],
+                                       mu,
+                                       mu + sigma[bar(X)],
+                                       mu + 2 * sigma[bar(X)],
+                                       mu + 3 * sigma[bar(X)]))
+```
+
+```{r}
+barplot(rep(1, 6) / 6, ylim = c(0, 1), names.arg = 1:6,
+        main = "Probability distribution for a fair die",
+        xlab = "Spots", ylab = "Probability")
+
+```
+
+```{r}
+set.seed(20231106)
+m <- 10000
+
+for (n in c(10, 30, 100)) {
+    means <- sapply(1:m, function(i) {
+        X <- sample(1:6, 10, replace = TRUE)
+        mean(X)
+    })
+    
+    hist(means, probability = TRUE, breaks = seq(1, 6, by = 0.1),
+         main = paste("Distribution of the sample mean for the number of spots with n =", n),
+         xlab = "Sample mean for the number of spots",
+         ylab = "Density")
+}
+```
+
+
+```{r}
+unit <- 100000
+mean <- 0.6
+x <- seq(0, 3, by = 0.01)
+d <- dlnorm(x, log(mean)) * unit
+d <- d[d < 100000]
+
+hist(d, breaks = seq(0, 1.2, by = 0.1) * unit, probability = TRUE,
+     main = "Fictitious income distribution",
+     xlab = "Income in €",
+     ylab = "Density")
+```
+
+
+```{r}
+m <- 10000
+
+for (n in c(10, 100, 1000)) {
+    means <- sapply(1:m, function(i) {
+        X <- rlnorm(n, log(mean)) * unit
+        mean(X)
+    })
+    means <- means[means < 250000]
+    
+    hist(means, probability = TRUE, breaks = seq(0, 2.5, by = 0.02) * unit,
+         main = paste("Distribution of the sample mean of incomes with n =", n),
+         xlab = "Sample mean of incomes",
+         ylab = "Density")
+}
+```
+
+## Confidence intervals
+
+```{r, fig.width=10, fig.height=10}
+set.seed(20231111)
+
+d <- read.table('data/miete03.asc', header = TRUE)
+
+rent <- d$nm
+mu <- mean(rent)
+sigma <- sqrt(mean((mu-rent)^2))
+
+m <- 100   # number of draws
+n <- 30    # sample size
+
+sample_conf_interval <- function(i, data, n, sigma, z) {
+    X <- sample(data, size = n)
+    Xbar <- mean(X)
+    E <- z * sigma/sqrt(n)
+    c(Xbar - E, Xbar + E)
+}
+
+
+for (gamma in c(0.8, 0.95, 0.99)) {   # confidence levels
+    alpha <- 1 - gamma    # significance level
+
+    z <- qnorm(1-alpha/2)
+
+    conf_ints <- t(sapply(1:m, sample_conf_interval, rent, n, sigma, z))
+
+    plot(NULL, xlim = c(300, 850), ylim = c(1, m+1),
+         main = sprintf("%d%%-confidence intervals for %d random samples (n=%d)\nof the rent dataset",
+                        round(gamma*100), m, n),
+         xlab = "Rent in €",
+         ylab = "Sample draw")
+    abline(v = mu, col = "red", lty = "dashed")
+    text(mu, 100, expression(mu), col = "red", adj = c(-0.5, -0.5))
+
+    mu_covered <- conf_ints[,1] < mu &  mu < conf_ints[,2]
+    conf_int_col <- ifelse(mu_covered, "black", "red")
+    segments(conf_ints[,1], 1:m, conf_ints[,2], 1:m, col = conf_int_col)
+    legend("topright", c(expression(paste("Confidence interval covers ", mu)),
+                         expression(paste("Confidence interval doesn't cover ", mu))),
+           lty = "solid",
+           col = c("black", "red"))
+}
+```
+
 
