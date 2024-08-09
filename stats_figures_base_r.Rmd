@@ -17,17 +17,29 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+TODOs:
+
+- explanations
+- proof-read
+- LICENSE
+- README
+- create repo
+- link to repo
+- deploy
+
 ## Introduction
 
-TODO
+This notebook contains code and figures for statistics and data science education. It stems from a statistics course I gave a the [HTW Berlin](https://www.htw-berlin.de/). All figures are generated with base R plotting functions and no additional packages are required. This notebook may be useful for people in statistics or data science education and for those who want to learn more about (advanced) base R plotting and mathematical annotations in R plots. Each section title below mentions in parentheses new techniques or concepts which are introduced in the section. I chose base R graphics because I find the plots very elegant and especially useful for function plotting.
 
-## Binomial distribution (barplots, formula notation, math. expressions)
+## Binomial distribution (barplots, formula notation, mathematical expressions)
 
-barplot formula notation
+I start with the binomial distribution and since it is a discrete probability distribution, I use a bar plot via `barplot()`. I find the formula notation best when using this function. You simply provide a vector of x and y values and a notation like `y ~ x` will hence plot bars of height $y_i$ for each corresponding $x_i$.
 
-expression
+I also use mathematical notation in the y-axis label and the plot title. Adding mathematical notation to plots in R is quite a hassle, as R basically requires you to provide the notation in some crude mixture between R and LaTeX notation. The syntax is described on the [R documentation page `?plotmath`](https://www.rdocumentation.org/packages/grDevices/versions/3.6.2/topics/plotmath) and can be showcased using `demo(plotmath)` in the console.
 
-expression w/ text (paste plus space, tilde for space)
+Pure mathematical expressions can be plotted via `expression(...)` as seen below for the y-axis label. To mix text and mathematical notation, use `paste()` inside `expression()`. For unknown reasons, `paste()` will *not* produce a space between the text and the mathematical expression, i.e. it works like `paste0()` when used within `expression()`.^[Interestingly `paste0()` doesn't work at all within `expression()`.] Also for unknown reasons, the $\sim$-operator `%~%` will add a space *before*, but not after the operator. You will need to use `~` to add a space after the operator.
+
+I don't find the typesetting as elegant as LaTeX, but it works for most scenarios.
 
 ```{r}
 p <- 0.2
@@ -40,7 +52,7 @@ barplot(y ~ x,
         main = expression(paste("Binomial distribution ", X %~% ~ B(10, 0.2))))
 ```
 
-substitute
+It's not ideal to hard code concrete values for $n$ and $p$ in the plot title. In order to pass R variables into mathematical expressions, you can use `substitute(<expr>, <vars>)` instead of `expression()`. The first argument provides the mathematical expression with placeholders like `n` and `p` in the code below. The second argument must be a list that maps the placeholders to actual values. Note that if you pass a vector instead of a scalar value using `<vars>`, only the first value will be taken from the vector.
 
 ```{r}
 p <- 0.2
@@ -55,6 +67,12 @@ barplot(y ~ x,
 
 ## Log normal distribution as example of a skewed distribution (`abline()` for vertical lines, `legend()` for text labels)
 
+The following code shows an example of a skewed distribution using the log-normal distribution. To draw a smooth curve, I generate linearly spaced values $x_i$ using `seq()` and calculate the respective $y_i$ value with the `dlnorm()` function. The function is plotted using a line plot (`plot()` with parameter `type="l"`).
+
+Annotations for mean and median are added as vertical lines using `abline()` with `v` (for *vertical*) parameter and a helper function that uses `legend()`. One could also add text annotations to the plot via `text()`, but only `legend()` provides a nice box around the text.
+
+You may notice that the font in the plot title is now different than in the above plots (bold below and normal above). This is due to an (unfortunate) default setting in R – mathematical expressions are plotted by default in normal font and titles without mathematical expressions are plotted in bold by default. You can either make plot titles with expressions bold by using `bold(<expr>)` inside `expression()` / `substitute()` or make all plot titles appear in normal font by passing the graphical parameter `font.main = 1` to the respective plot function.
+
 ```{r}
 x <- seq(0, 3, by = 0.001)
 unit <- 100000
@@ -68,7 +86,7 @@ mu <- sum(x * y * unit)
 med <- max(x[cumsum(y) <= 0.5]) * unit
 
 addlabel <- function(x, y, label, col, xjust = 0.05) {
-    legend(x, y, label, text.col = col, box.col = "white", xjust = xjust, x.intersp = 0)
+    legend(x, y, label, text.col = col, box.col = "lightgray", xjust = xjust, x.intersp = 0)
 }
 
 plot(x * unit, y, type = "l",
@@ -81,9 +99,9 @@ addlabel(mu, 0.0008, paste("Mean:", round(mu), "€"), "blue")
 
 ## From binomial to normal distribution (multiple plots, `curve()`, `legend()`)
 
-multiple graphics
+The following plots illustrate the transition from binomial to normal distribution when increasing $n$. I draw graphics for increasing values of $n$ in a `for`-loop^[Yes, there are situations where using a `for`-loop instead of vectorized operations, `lapply()`, etc. is fine and this is one of these situations since this loop doesn't generate or update values, but only causes side effects (drawing plots).] and additionally overlay the final plot with the corresponding normal distribution density function. I'm also using vertical lines via `plot()` with `type="h"` here instead of a bar plot, since the latter causes overplotting at high $n$. For each different $n$, I'm setting some graphical properties using the `xlim` and `lwd` lists. `curve()` is used for plotting the density function. It's very similar to a line plot with `plot()` and `type="l"`, but you directly pass the function that should be plotted and it takes care about generating the right $x_i$ values for it.
 
-better use "stick plot" (?)
+Usually it's better to use *ggplot2* or *lattice* when generating multiple graphics, i.e. as *facets* or *small multiples*. In this case, however, I need these plots as separate figures to include in presentation slides.
 
 ```{r}
 p <- 0.5
@@ -112,7 +130,7 @@ for (n in c(10, 100, 1000, 1000)) {
          main = sprintf("Binomial distribution for %d coin flips", n),
          xlim = xlim[[k]])
 
-    if (lastn == 1000) {
+    if (lastn == 1000) {  # add the curve for the normal distribution
         mu <- n*p
         sigma <- n*p/sqrt(n)
         f <- function(x) { dnorm(x, mean = mu, sd = sigma) }
