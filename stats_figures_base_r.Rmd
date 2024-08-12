@@ -388,7 +388,11 @@ points(x, y = runif(n, 0, max_y), col = rgb(0, 0, 0, 0.5))
 
 ## Sampling distributions and central limit theorem
 
+The following figures depict sampling distributions and show practical implications of the central limit theorem (CLT).
+
 ### Visualizing different sample draws and estimation errors (`dotchart()`, mathematical expressions, legends)
+
+For the following plots I will draw random samples from data about rents in a Germany city. The rent data is left-skewed as we can see in the following plot. For educational reasons, the data is considered to be the "population" from which the samples are drawn. The mean rent from the data is considered the "population mean" $\mu$.
 
 ```{r}
 set.seed(20231024)
@@ -406,6 +410,7 @@ abline(v = mu, lty = 'dashed', col = 'red')
 text(mu, 0.0017, expression(mu), adj = c(-0.5, 0), col = 'red')
 ```
 
+I now draw $m=10$ random samples from the population, each consisting of $n=30$ data points. For each of the $m$ samples, the mean $\hat \mu_i$ is calculated and depicted in a *dot plot* via `dotchart()` together with the mean $\overline{\hat \mu}$ of all samples.
 
 ```{r}
 n <- 30
@@ -426,6 +431,9 @@ mean_hat_mu <- mean(hat_mu_i)
 abline(v = mean_hat_mu, lty = 'dashed', col = 'blue')
 text(mean_hat_mu, 0.5, expression(bar(hat(mu))), adj = c(-0.5, 0), col = 'blue')
 ```
+
+The following plot then draws much more random samples ($m=10,000$) and shows the resulting sample means as histogram. The plot is annotated with the (tiny) absolute error $|\overline{\hat \mu} -  \mu|$ showing that the sample means are distributed around the population mean $\mu$.
+
 ```{r}
 n <- 30
 m <- 10000
@@ -452,13 +460,16 @@ text(mean_hat_mu, 0.0085, expression(abs(paste(" ", bar(hat(mu)) - mu, " "))), a
 text(mean_hat_mu, 0.0085, paste0("= ", e, "€"), adj = c(-2.2, -0.2))
 ```
 
+The next plot shows how random samples of different sizes $n$ are distributed. One can see that for low $n$, the left-skew of the population is also reflected in the sampling distribution, but as $n$ is increased, this skew disappears. This shows the importance of using a sufficient sample size when suspecting a skewed population distribution.
+
+Each plot is also drawn on the same x-axis scale, so that students see how the standard deviation of the sampling distribution (i.e. the *standard error*) reduces with increasing sample size $n$. I also collect the empirical standard errors calculated from the samples in the vector `se_per_samplesize` to plot them in the next figure.
 
 ```{r}
 m <- 10000
 se_per_samplesize <- numeric()
-samplesizes <- integer()
+samplesizes <- c(15, 30, 100, 1000)
 
-for (n in c(15, 30, 100, 1000)) {
+for (n in samplesizes) {
     hat_mu_i <- sapply(1:m, function(i) {
         mean(sample(rent, n))
     })
@@ -472,9 +483,11 @@ for (n in c(15, 30, 100, 1000)) {
     )
 
     se_per_samplesize <- c(se_per_samplesize, sd(hat_mu_i))
-    samplesizes <- c(samplesizes, n)
 }
 ```
+
+The notion of decreasing the standard error and hence increasing the precision of an estimate by increasing the sample size can then be formalized for the mean $\overline X$ for iid. samples as $\sigma_{\overline X} = \frac \sigma {\sqrt n}$. The points in the plot reflect the collected standard errors from the samples `se_per_samplesize` for each $n$ in `samplesizes`. The red dashed line is calculated from the formula for the standard error of sample mean.
+
 ```{r}
 plot(samplesizes, se_per_samplesize, type = "p",
      main = "Estimation error of the rent by sample size",
@@ -487,7 +500,9 @@ legend("topright", c("Empirical standard error", "Theoretic standard error"),
        pch = c(1, NA_integer_), lty = c(NA_integer_, 2), col = c("black", "red"))
 ```
 
-### Distribution of the sample mean $\overline X$ (math. expressions)
+### Distribution of the sample mean $\overline X$
+
+According to the CLT, the mean $\overline X$ of an iid. sample is normally distributed with expected value $\mu$ and standard deviation $\sigma_{\overline X}$ (standard error). We can reuse the plot of the normal distribution with 68-95-99.7-rule and apply it for this sampling distribution.
 
 ```{r}
 x <- seq(-3.5, 3.5, length = 1001)
@@ -518,30 +533,7 @@ axis(1, at = -3:3, labels = expression(mu - 3 * sigma[bar(X)],
                                        mu + 3 * sigma[bar(X)]))
 ```
 
-```{r}
-barplot(rep(1, 6) / 6, ylim = c(0, 1), names.arg = 1:6,
-        main = "Probability distribution for a fair die",
-        xlab = "Spots", ylab = "Probability")
-
-```
-
-```{r}
-set.seed(20231106)
-m <- 10000
-
-for (n in c(10, 30, 100)) {
-    means <- sapply(1:m, function(i) {
-        X <- sample(1:6, 10, replace = TRUE)
-        mean(X)
-    })
-    
-    hist(means, probability = TRUE, breaks = seq(1, 6, by = 0.1),
-         main = paste("Distribution of the sample mean for the number of spots with n =", n),
-         xlab = "Sample mean for the number of spots",
-         ylab = "Density")
-}
-```
-
+To stress again the importance of a sufficient sample size, the following plots sample from a highly left-skewed distribution and depict how the sampling distribution picks up this asymmetry so that it is even visible for a sample size of $n=100$.
 
 ```{r}
 unit <- 100000
@@ -555,7 +547,6 @@ hist(d, breaks = seq(0, 1.2, by = 0.1) * unit, probability = TRUE,
      xlab = "Income in €",
      ylab = "Density")
 ```
-
 
 ```{r}
 m <- 10000
