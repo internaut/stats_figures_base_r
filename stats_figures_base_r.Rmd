@@ -101,7 +101,7 @@ addlabel(mu, 0.0008, paste("Mean:", round(mu), "€"), "blue")
 
 The following plots illustrate the transition from binomial to normal distribution when increasing $n$. I draw graphics for increasing values of $n$ in a `for`-loop^[Yes, there are situations where using a `for`-loop instead of vectorized operations, `lapply()`, etc. is fine and this is one of these situations since this loop doesn't generate or update values, but only causes side effects (drawing plots).] and additionally overlay the final plot with the corresponding normal distribution density function. I'm also using vertical lines via `plot()` with `type="h"` here instead of a bar plot, since the latter causes overplotting at high $n$. For each different $n$, I'm setting some graphical properties using the `xlim` and `lwd` lists. `curve()` is used for plotting the density function. It's very similar to a line plot with `plot()` and `type="l"`, but you directly pass the function that should be plotted and it takes care about generating the right $x_i$ values for it.
 
-Usually it's better to use *ggplot2* or *lattice* when generating multiple graphics, i.e. as *facets* or *small multiples*. In this case, however, I need these plots as separate figures to include in presentation slides.
+Usually it's better to use *ggplot2* or *lattice* when generating multiple graphics, i.e. as *facets* or *small multiples*. In this case, however, I need these plots as separate figures to be included in presentation slides.
 
 ```{r}
 p <- 0.5
@@ -147,6 +147,8 @@ for (n in c(10, 100, 1000, 1000)) {
 
 ## Continuous uniform distribution (line segments with `segments()`, area under the curve with `polygon()`)
 
+The following plot uses waiting time (waiting for a bus, waiting at the doctor's, etc.) as an example for a continuous uniform distribution. `segments()` can be used to draw line segments from $x_1, y_1$ to $x_2, y_2$.
+
 ```{r}
 a <- 0
 b <- 10
@@ -162,6 +164,9 @@ segments(b, y, b, 0, lty = "dashed")
 segments(b, 0, b+1, 0)
 ```
 
+To highlight a specific probability I draw shaded areas with `polygon()`. The coordinates of the vertices are passed as separate $x$ and $y$ vectors (a list with $x$ and $y$ components or a two-column matrix are also possible). The polygon is automatically closed, i.e. the last point and the first point are joined.
+
+Please also note the usage of `~` in the mathematical expression used in `substitute()`, which is necessary because of the inequality $a \le X \le b$. For reasons unknown to me, R will not accept an expression like `P(a <= X <= b)` in `expression()` / `substitute()` and will answer with `Error: unexpected '<=' in "expression(P(a <= X <="`. The somewhat surprising solution is to add a `~`-operator before the `X`.
 
 ```{r}
 a <- 0
@@ -175,7 +180,7 @@ plot(c(a, b), c(y, y), xlim = c(a-1, b+1), ylim = c(0, y*1.1), pch = 16,
      xlab = "Waiting time in minutes", ylab = "Density",
      main = "Density function of the waiting time")
 
-polygon(c(x1, x1, x2, x2, x1), c(0, y, y, 0, 0), col = "lightgray", border = FALSE)
+polygon(c(x1, x1, x2, x2), c(0, y, y, 0), col = "lightgray", border = FALSE)
 
 text(x1 + (x2 - x1) / 2, y/2, substitute(P(a <= ~X <= b), list(a=x1, b=x2)), cex = 0.75)
 
@@ -189,6 +194,8 @@ segments(b, 0, b+1, 0)
 ## Normal distribution
 
 ### Normal distributions with different parameters ("empty" plots, styles, legends)
+
+The following code again generates figures intended to be used in slides. I step-by-step plot the density function of the normal distribution with different values for $\mu$ and $\sigma$ using a nested `for`-loop. The parameters and different line styles are taken from lists. Each figure is first prepared in the outer `for`-loop as empty canvas using `plot(NULL, ...)` which sets limits for the axes and the labels. In the inner `for`-loop, the density functions are added using `curve()` with parameter `add = TRUE`. The legend labels and styles are collected in the inner loop and finally the legend is drawn for each figure via `legend()`.
 
 ```{r}
 param <- list(
@@ -207,16 +214,17 @@ styles <- list(
     c("dotted", "orange")
 )
 
-for (maxshow in 1:length(param)) {
+for (maxshow in 1:length(param)) {  # outer loop: number of curves to show
+    # create empty plot
     plot(NULL, xlim = c(-5, 5), ylim = c(0, 1.0),
-         main = "Normal distributions",
+         main = "Normal distribution with different parameters",
          xlab = "x",
          ylab = "f(x)")
 
     legend_labels <- character()
     legend_lty <- character()
     legend_col <- character()
-    for (i in 1:maxshow) {
+    for (i in 1:maxshow) {   # inner loop: draw up to `maxshow` curves
         p <- param[[i]]
         m <- p[1]
         s <- p[2]
@@ -236,47 +244,44 @@ for (maxshow in 1:length(param)) {
 }
 ```
 
-### Standard normal distribution (`curve()`)
-
-```{r}
-curve(dnorm, lwd = 2, n = 1001, from = -3, to = 3,
-      main = "Standard normal distribution N(0, 1)",
-      xlab = "Standard unit z",
-      ylab = "f(z)")
-```
-
-### Example of a normal distribution (`curve()`)
-
-```{r}
-f <- function(x) { dnorm(x, mean = 10, sd = 8) }
-curve(f, lwd = 2, n = 1001, from = -15, to = 35,
-      main = "Temperature normally distrubted as N(10°C, 8°C)",
-      xlab = "Temperature x in °C",
-      ylab = "f(x)")
-```
-
 ### Standard normal distribution: areas under the curve (area under the curve with `polygon()`, annotations with `arrows()`)
 
+This plot visualizes the [*68-95-99.7 rule*](https://en.wikipedia.org/wiki/68%E2%80%9395%E2%80%9399.7_rule): within one, two and three standard deviations of the mean lie about 68%, 95% and 99.7% of the values in a normal distribution. I hence plot the areas under the standard normal distribution for different intervals of standard units $[-z, z]$ with $z \in \{1, 2, 3\}$.
+
+For shading the areas, I again use `polygon`. This time though, constructing the $x$ and $y$ coordinates for the vertices requires a little more effort. In the code below `x` and `y` refer to $x$ and $f(x)$ for the density function, respectively. I first construct a boolean vector `iv` that indicates which coordinates from `x` and `y` are inside the interval $[-z, z]$. We can refer to these values by `x[iv]` and `y[iv]` respectively – these are the parts of the density function between $-z$ and $z$ and form the upper edge of the polygon. However, to shade the full area we need to extend the coordinates vector for the bottom points at $(-z, 0)$ and $(z, 0)$ and hence provide `c(-z, x[iv], z)` for the $x$ coordinates and `c(0, y[iv], 0)` for the $y$ coordinates of the polygon. The order of these values is important, so that the last and first point again can be joined for closing the polygon.
+
+In order to give these areas different colors, I could again use a list of different styles. This time however, I'm simply using a semi-transparent color `"#aaaaaa50"` where the last color component `50` sets the alpha channel to $5 \cdot 16/256 \approx 31\%$ transparency. Since areas with smaller $z$ are covered by areas with higher $z$, the semi-transparent gray adds up to darker tones for smaller $z$.
+
+Finally, I'm using `abline()` again for vertical dashed lines and `arrows()` to depict the probabilities in each interval.
+
 ```{r}
+# plot the standard normal density function
 x <- seq(-3.5, 3.5, length = 1001)
 y <- dnorm(x)
 plot(x, y, ylim = c(0, 0.6), type = "l",
      xlab = "z", ylab = "f(z)", main = "Standard normal distribution N(0, 1)")
 
-for (z in 1:3) {
+for (z in 1:3) {  # iterate through the standard units z
+    # add semi-transparent shaded area in [-z, z]
     iv <- x >= -z & x <= z
-    polygon(c(x[iv][1], x[iv], max(x[iv])),
+    polygon(c(-z, x[iv], z),
             c(0, y[iv], 0),
             col = "#aaaaaa50", border = FALSE)
+    # add vertical lines at -z and z
     abline(v = c(-z, z), lty = "dashed", col = paste0("#000000", c("FF", "AA", "66")[z]))
+    # add arrow and text label annotations to depict the probability
     y_segm <- 0.38 + 0.055 * z
     arrows(-z, y_segm, z, y_segm, code = 3, length = 0.1)
-    text(0, y_segm, paste0(round((1-pnorm(-z) * 2) * 100, 1), "%"), adj = c(0.5, -0.2))
+    p <- round((1-pnorm(-z) * 2) * 100,
+               ifelse(z < 3, 0, 1))
+    text(0, y_segm, paste0(p, "%"), adj = c(0.5, -0.2))
 }
 ```
 
 
-### Normal distribution (math. expressions)
+### Normal distribution (mathematical expressions in labels using `axis()`)
+
+This is the same plot as above, but this time it shows a general normal distribution instead of the standard normal. I'm using `axis()` to provide mathematical expressions in the x-axis labels.
 
 ```{r}
 x <- seq(-3.5, 3.5, length = 1001)
@@ -307,7 +312,9 @@ axis(1, at = -3:3, labels = expression(mu - 3 * sigma,
                                        mu + 3 * sigma))
 ```
 
-### Density function, distribution function, quantile function and random number generator (plotting random points under a curve)
+### Density function, distribution function, quantile function and random number generator (annotations, plotting random points under a curve)
+
+Students often confuse the density function $f(x)$ (aka probability density function – *pdf*), the distribution function $F(x)$ (aka cumulative distribution function – *cdf*), the quantile function $F^{-1}(x)$ and their respective counterparts in R. I therefore always depict these functions, explain how they related to each other and how they can be used in R.
 
 ```{r}
 x <- seq(-4, 4, length = 1000)
@@ -325,6 +332,8 @@ plot(x, y, type = "l",
      xlab = "x", ylab = "F(x)")
 ```
 
+This plot of the distribution function is used to introduce the quantile function, which some students have problems to comprehend.
+
 ```{r}
 x <- seq(-4, 4, length = 1000)
 y <- pnorm(x)
@@ -339,13 +348,24 @@ text(-3.5, p, paste("F(x) =", p), pos = 3, col = "red")
 text(q, 0, paste("For which x?"), pos = 4, col = "red")
 ```
 
+This plot of the quantile function picks up the question about solving for $x$ in $F(x) = 0.9$ from the previous plot. Note how you have to write $F^{-1}(x)$ as `F^{-1} * (x)`. The `*` is required to juxtapose $F^{-1}$ and $(x)$ without horizontal spacing (using `~` instead would introduce spacing).
+
 ```{r}
 x <- seq(0, 1, length = 1000)
 y <- qnorm(x)
+p <- 0.9
+q <- qnorm(0.9)
+
 plot(x, y, type = "l",
-     main = expression(paste("Quantile function ", F^{-1} * (x), " of the standard normal distribution: qnorm(x)")),
+     main = expression(paste("Quantile function ", F^{-1} * (x),
+                             " of the standard normal distribution: qnorm(x)")),
      xlab = "x", ylab = expression(F^{-1} * (x)))
+segments(0, q, p, q, lty = "dashed", col = "red")
+segments(p, q, p, -3, lty = "dashed", col = "red")
+text(p, q + 0.4, substitute(F^{-1} * (p) %~~% q, list(p=p, q=round(q, 2))), col = "red")
 ```
+
+After density, distribution and quantile function, the list of functions provided by R for each distribution family can be completed with the random number generation function. As an example, I'm using `rnorm()` to generate 1000 values `x` from the standard normal distribution. I'm using `density()` to approximate the density function of the generated points. Then, I'm constructing `max_y` as a vector that contains the maximum $y$ coordinate for each value in `x` so that it is below the density function curve. The density curve is plotted via `plot()` and the random points are added via `points()`. Here I'm placing each point in `x` on a random $y$ coordinate between 0 and the respective value in `max_y` so that it will always be drawn below the density curve. This works since we can pass a vector like `max_y` to the `max` parameter (upper limit of the uniform distribution) of `runif()` so that for each coordinate in `x` we have the correct upper limit for the random $y$ coordinate in order to be placed underneath the curve. Again, I'm using semi-transparent color – this time for the points by setting the fourth parameter in `rgb()` to 0.5.
 
 ```{r}
 set.seed(20231206)
@@ -368,7 +388,7 @@ points(x, y = runif(n, 0, max_y), col = rgb(0, 0, 0, 0.5))
 
 ## Sampling distributions and central limit theorem
 
-### Visualizing different sample draws and estimation errors (`dotchart()`, math. expressions, legends)
+### Visualizing different sample draws and estimation errors (`dotchart()`, mathematical expressions, legends)
 
 ```{r}
 set.seed(20231024)
