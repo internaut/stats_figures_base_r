@@ -19,7 +19,6 @@ knitr::opts_chunk$set(echo = TRUE)
 
 TODOs:
 
-- proof-read
 - LICENSE
 - README
 - create repo
@@ -28,11 +27,11 @@ TODOs:
 
 ## Introduction
 
-This notebook contains code and figures for statistics and data science education. It stems from a statistics course I gave a the [HTW Berlin](https://www.htw-berlin.de/). All figures are generated with base R plotting functions and no additional packages are required. This notebook may be useful for people in statistics or data science education and for those who want to learn more about (advanced) base R plotting and mathematical annotations in R plots. Each section title below mentions in parentheses new techniques or concepts which are introduced in the section. I chose base R graphics because I find the plots very elegant and especially useful for function plotting.
+This notebook contains code and figures for statistics and data science education. It stems from a statistics course I gave a the [HTW Berlin](https://www.htw-berlin.de/). All figures are generated with base R plotting functions and no additional packages are required. This notebook may be useful for people in statistics or data science education and for those who want to learn more about (advanced) base R plotting and mathematical annotations in R plots. Each section title below mentions in parentheses new techniques or concepts which are introduced in the section. Most plots are not self-explanatory – they are intended to be used in class for illustration and discussion.
 
 ## Binomial distribution (barplots, formula notation, mathematical expressions)
 
-I start with the binomial distribution and since it is a discrete probability distribution, I use a bar plot via `barplot()`. I find the formula notation best when using this function. You simply provide a vector of x and y values and a notation like `y ~ x` will hence plot bars of height $y_i$ for each corresponding $x_i$.
+I start with the binomial distribution. Since it is a discrete probability distribution, I use a bar plot via `barplot()`. I find the formula notation best when using this function. You simply provide a vector of *x* and *y* values and the formula notation `y ~ x` will hence plot bars of height $y_i$ for each corresponding $x_i$.
 
 I also use mathematical notation in the y-axis label and the plot title. Adding mathematical notation to plots in R is quite a hassle, as R basically requires you to provide the notation in some crude mixture between R and LaTeX notation. The syntax is described on the [R documentation page `?plotmath`](https://www.rdocumentation.org/packages/grDevices/versions/3.6.2/topics/plotmath) and can be showcased using `demo(plotmath)` in the console.
 
@@ -98,7 +97,7 @@ addlabel(mu, 0.0008, paste("Mean:", round(mu), "€"), "blue")
 
 ## From binomial to normal distribution (multiple plots, `curve()`, `legend()`)
 
-The following plots illustrate the transition from binomial to normal distribution when increasing $n$. I draw graphics for increasing values of $n$ in a `for`-loop^[Yes, there are situations where using a `for`-loop instead of vectorized operations, `lapply()`, etc. is fine in R and this is one of these situations since this loop doesn't generate or update values, but only causes side effects (drawing plots).] and additionally overlay the final plot with the corresponding normal distribution density function. I'm also using vertical lines via `plot()` with `type="h"` here instead of a bar plot, since the latter causes overplotting at high $n$. For each different $n$, I'm setting some graphical properties using the `xlim` and `lwd` lists. `curve()` is used for plotting the density function. It's very similar to a line plot with `plot()` and `type="l"`, but you directly pass the function that should be plotted and it takes care about generating the right $x_i$ values for it.
+The following plots illustrate the transition from binomial to normal distribution when increasing $n$. I draw graphics for increasing values of $n$ in a `for`-loop^[Yes, there are situations where using a `for`-loop instead of vectorized operations, `lapply()`, etc. is fine in R and this is one of these situations, since this loop doesn't generate or update values, but only causes side effects (drawing plots).] and additionally overlay the final plot with the corresponding normal distribution density function. I'm also using vertical lines via `plot()` with `type="h"` here instead of a bar plot, since the latter causes overplotting at high $n$. For each different $n$, I'm setting some graphical properties using the `xlim` and `lwd` lists. `curve()` is used for plotting the density function. It's very similar to a line plot with `plot()` and `type="l"`, but you directly pass the function that should be plotted and it takes care about generating the right *x* values for it.
 
 Usually it's better to use *ggplot2* or *lattice* when generating multiple graphics, i.e. as *facets* or *small multiples*. In this case, however, I need these plots as separate figures to be included in presentation slides.
 
@@ -146,7 +145,7 @@ for (n in c(10, 100, 1000, 1000)) {
 
 ## Continuous uniform distribution (line segments with `segments()`, area under the curve with `polygon()`)
 
-The following plot uses waiting time (waiting for a bus, waiting at the doctor's, etc.) as an example for a continuous uniform distribution. `segments()` can be used to draw line segments from $x_1, y_1$ to $x_2, y_2$.
+The following plot uses waiting time (waiting for a bus, waiting at the doctor's, etc.) as an example for a continuous uniform distribution. `segments()` can be used to draw line segments from point $(x_1, y_1)$ to point $(x_2, y_2)$.
 
 ```{r}
 a <- 0
@@ -163,9 +162,9 @@ segments(b, y, b, 0, lty = "dashed")
 segments(b, 0, b+1, 0)
 ```
 
-To highlight a specific probability I draw shaded areas with `polygon()`. The coordinates of the vertices are passed as separate $x$ and $y$ vectors (a list with $x$ and $y$ components or a two-column matrix are also possible). The polygon is automatically closed, i.e. the last point and the first point are joined.
+To highlight a specific probability as area under the curve, I draw shaded regions with `polygon()`. The coordinates of the vertices are passed as separate *x* and *y* vectors (a list with *x* and *y* components or a two-column matrix are also possible). The polygon is automatically closed, i.e. the last point and the first point are joined.
 
-Please also note the usage of `~` in the mathematical expression used in `substitute()`, which is necessary because of the inequality $a \le X \le b$. For reasons unknown to me, R will not accept an expression like `P(a <= X <= b)` in `expression()` / `substitute()` and will answer with `Error: unexpected '<=' in "expression(P(a <= X <="`. The somewhat surprising solution is to add a `~`-operator before the `X`.
+Please also note the usage of `~` in the mathematical expression used in `substitute()`, which is necessary to typeset the inequality $a \le X \le b$. For reasons unknown to me, R will not accept an expression like `P(a <= X <= b)` in `expression()` / `substitute()` and will answer with `Error: unexpected '<=' in "expression(P(a <= X <="`. Whenever such an error comes up, you can try to add one of the two juxtaposition operators `*` or `~`. The first juxtaposes two symbols without a space, the second with a space. So the solution here is to add the `~`-operator before the `X`.
 
 ```{r}
 a <- 0
@@ -194,7 +193,7 @@ segments(b, 0, b+1, 0)
 
 ### Normal distributions with different parameters ("empty" plots, styles, legends)
 
-The following code again generates figures intended to be used in slides. I step-by-step plot the density function of the normal distribution with different values for $\mu$ and $\sigma$ using a nested `for`-loop. The parameters and different line styles are taken from lists. Each figure is first prepared in the outer `for`-loop as empty canvas using `plot(NULL, ...)` which sets limits for the axes and the labels. In the inner `for`-loop, the density functions are added using `curve()` with parameter `add = TRUE`. The legend labels and styles are collected in the inner loop and finally the legend is drawn for each figure via `legend()`.
+The following code again generates figures intended to be used in slides. I step-by-step plot the density function of the normal distribution with different values for $\mu$ and $\sigma$ using a nested `for`-loop. The parameters and different line styles are taken from lists. Each figure is first prepared in the outer `for`-loop as empty canvas using `plot(NULL, ...)` which sets limits for the axes and defines the labels. In the inner `for`-loop, the density functions are added using `curve()` with parameter `add = TRUE`. The legend labels and styles are collected in the inner loop and finally the legend is drawn for each figure via `legend()`.
 
 ```{r}
 param <- list(
@@ -247,7 +246,7 @@ for (maxshow in 1:length(param)) {  # outer loop: number of curves to show
 
 This plot visualizes the [*68-95-99.7 rule*](https://en.wikipedia.org/wiki/68%E2%80%9395%E2%80%9399.7_rule): within one, two and three standard deviations of the mean lie about 68%, 95% and 99.7% of the values in a normal distribution. I hence plot the areas under the standard normal distribution for different intervals of standard units $[-z, z]$ with $z \in \{1, 2, 3\}$.
 
-For shading the areas, I again use `polygon`. This time though, constructing the $x$ and $y$ coordinates for the vertices requires a little more effort. In the code below `x` and `y` refer to $x$ and $f(x)$ for the density function, respectively. I first construct a boolean vector `iv` that indicates which coordinates from `x` and `y` are inside the interval $[-z, z]$. We can refer to these values by `x[iv]` and `y[iv]` respectively – these are the parts of the density function between $-z$ and $z$ and form the upper edge of the polygon. However, to shade the full area we need to extend the coordinates vector for the bottom points at $(-z, 0)$ and $(z, 0)$ and hence provide `c(-z, x[iv], z)` for the $x$ coordinates and `c(0, y[iv], 0)` for the $y$ coordinates of the polygon. The order of these values is important, so that the last and first point again can be joined for closing the polygon.
+For shading the areas, I again use `polygon`. This time though, constructing the *x* and *y* coordinates for the vertices requires a little more effort. In the code below `x` and `y` refer to $x$ and $f(x)$ for the density function, respectively. I first construct a boolean vector `iv` that indicates which coordinates from `x` and `y` are inside the interval $[-z, z]$. We can refer to these values by `x[iv]` and `y[iv]` respectively – these are the parts of the density function between $-z$ and $z$ and form the upper edge of the polygon. However, to shade the full area we need to extend the coordinates vector for the bottom points at $(-z, 0)$ and $(z, 0)$ and hence provide `c(-z, x[iv], z)` for the $x$ coordinates and `c(0, y[iv], 0)` for the $y$ coordinates of the polygon. The order of these values is important, so that the last and first point again can be joined for closing the polygon.
 
 In order to give these areas different colors, I could again use a list of different styles. This time however, I'm simply using a semi-transparent color `"#aaaaaa50"` where the last color component `50` sets the alpha channel to $5 \cdot 16/256 \approx 31\%$ transparency. Since areas with smaller $z$ are covered by areas with higher $z$, the semi-transparent gray adds up to darker tones for smaller $z$.
 
@@ -313,7 +312,7 @@ axis(1, at = -3:3, labels = expression(mu - 3 * sigma,
 
 ### Density function, distribution function, quantile function and random number generator (annotations, plotting random points under a curve)
 
-Students often confuse the density function $f(x)$ (aka probability density function – *pdf*), the distribution function $F(x)$ (aka cumulative distribution function – *cdf*), the quantile function $F^{-1}(x)$ and their respective counterparts in R. I therefore always depict these functions, explain how they related to each other and how they can be used in R.
+Students often confuse the density function $f(x)$ (aka probability density function – *pdf*), the distribution function $F(x)$ (aka cumulative distribution function – *cdf*), the quantile function $F^{-1}(x)$ and their respective counterparts in R. I therefore always depict these functions, explain how they relate to each other and how they can be used in R.
 
 ```{r}
 x <- seq(-4, 4, length = 1000)
@@ -361,10 +360,10 @@ plot(x, y, type = "l",
      xlab = "x", ylab = expression(F^{-1} * (x)))
 segments(0, q, p, q, lty = "dashed", col = "red")
 segments(p, q, p, -3, lty = "dashed", col = "red")
-text(p, q + 0.4, substitute(F^{-1} * (p) %~~% q, list(p=p, q=round(q, 2))), col = "red")
+text(p, q + 0.4, substitute(F^{-1} * (p) %~~% q, list(p=p, q=round(q, 2))), col = "red", adj = 1)
 ```
 
-After density, distribution and quantile function, the list of functions provided by R for each distribution family can be completed with the random number generation function. As an example, I'm using `rnorm()` to generate 1000 values `x` from the standard normal distribution. I'm using `density()` to approximate the density function of the generated points. Then, I'm constructing `max_y` as a vector that contains the maximum $y$ coordinate for each value in `x` so that it is below the density function curve. The density curve is plotted via `plot()` and the random points are added via `points()`. Here I'm placing each point in `x` on a random $y$ coordinate between 0 and the respective value in `max_y` so that it will always be drawn below the density curve. This works since we can pass a vector like `max_y` to the `max` parameter (upper limit of the uniform distribution) of `runif()` so that for each coordinate in `x` we have the correct upper limit for the random $y$ coordinate in order to be placed underneath the curve. Again, I'm using semi-transparent color – this time for the points by setting the fourth parameter in `rgb()` to 0.5.
+After density, distribution and quantile function, the list of functions provided by R for each distribution family can be completed with the random number generation function. As an example, I'm using `rnorm()` to generate 1000 values `x` from the standard normal distribution. I'm using `density()` to approximate the density function of the generated points. Then, I'm constructing `max_y` as a vector that contains the maximum *y* coordinate for each value in `x` so that it is below the density function curve. The density curve is plotted via `plot()` and the random points are added via `points()`. Here I'm placing each point in `x` on a random *y* coordinate between 0 and the respective value in `max_y` so that it will always be drawn below the density curve. This works since we can pass a vector like `max_y` to the `max` parameter (upper limit of the uniform distribution) of `runif()` so that for each coordinate in `x` we have the correct upper limit for the random $y$ coordinate in order to be placed underneath the curve. Again, I'm using semi-transparent color – this time for the points by setting the fourth parameter in `rgb()` to 0.5.
 
 ```{r}
 set.seed(20231206)
@@ -391,7 +390,7 @@ The following figures depict sampling distributions and show practical implicati
 
 ### Visualizing different sample draws and estimation errors (`dotchart()`, mathematical expressions, legends)
 
-For the following plots I will draw random samples from data about rents in a Germany city. The rent data is left-skewed as we can see in the following plot. For educational reasons, the data is considered to be the "population" from which the samples are drawn. The mean rent from the data is considered the "population mean" $\mu$.
+For the following plots I will draw random samples from data about rents in a Germany city. The rent data is right skewed as we can see in the following plot. For educational reasons, the data is considered to be the "population" from which the samples are drawn. The mean rent from the data is considered the "population mean" $\mu$.
 
 ```{r}
 set.seed(20231024)
@@ -459,7 +458,7 @@ text(mean_hat_mu, 0.0085, expression(abs(paste(" ", bar(hat(mu)) - mu, " "))), a
 text(mean_hat_mu, 0.0085, paste0("= ", e, "€"), adj = c(-2.2, -0.2))
 ```
 
-The next plot shows how random samples of different sizes $n$ are distributed. One can see that for low $n$, the left-skew of the population is also reflected in the sampling distribution, but as $n$ is increased, this skew disappears. This shows the importance of using a sufficient sample size when suspecting a skewed population distribution.
+The next plot shows how random samples of different sizes $n$ are distributed. One can see that for low $n$, the skew of the population is also reflected in the sampling distribution, but as $n$ is increased, this skew disappears. This shows the importance of using a sufficient sample size when suspecting a skewed population distribution.
 
 Each plot is also drawn on the same x-axis scale, so that students see how the standard deviation of the sampling distribution (i.e. the *standard error*) reduces with increasing sample size $n$. I also collect the empirical standard errors calculated from the samples in the vector `se_per_samplesize` to plot them in the next figure.
 
@@ -485,7 +484,7 @@ for (n in samplesizes) {
 }
 ```
 
-The notion of decreasing the standard error and hence increasing the precision of an estimate by increasing the sample size can then be formalized for the mean $\overline X$ for iid. samples as $\sigma_{\overline X} = \frac \sigma {\sqrt n}$. The points in the plot reflect the collected standard errors from the samples `se_per_samplesize` for each $n$ in `samplesizes`. The red dashed line is calculated from the formula for the standard error of sample mean.
+The notion of decreasing the standard error and hence increasing the precision of an estimate by increasing the sample size can then be formalized for the mean $\overline X$ for iid. samples as $\sigma_{\overline X} = \frac \sigma {\sqrt n}$. The points in the plot reflect the collected standard errors from the samples `se_per_samplesize` for each $n$ in `samplesizes` used in the previous figures. The red dashed line is calculated from the formula for the standard error of sample mean.
 
 ```{r}
 plot(samplesizes, se_per_samplesize, type = "p",
@@ -501,7 +500,7 @@ legend("topright", c("Empirical standard error", "Theoretic standard error"),
 
 ### Distribution of the sample mean $\overline X$
 
-According to the CLT, the mean $\overline X$ of an iid. sample is normally distributed with expected value $\mu$ and standard deviation $\sigma_{\overline X}$ (standard error). We can reuse the plot of the normal distribution with 68-95-99.7-rule and apply it for this sampling distribution.
+According to the CLT, the mean $\overline X$ of an iid. sample $X$ is normally distributed with expected value $\mu$ and standard deviation $\sigma_{\overline X}$ (standard error). We can reuse the plot of the normal distribution with 68-95-99.7-rule and apply it for this sampling distribution.
 
 ```{r}
 x <- seq(-3.5, 3.5, length = 1001)
@@ -532,7 +531,7 @@ axis(1, at = -3:3, labels = expression(mu - 3 * sigma[bar(X)],
                                        mu + 3 * sigma[bar(X)]))
 ```
 
-To stress again the importance of a sufficient sample size, the following plots sample from a highly left-skewed distribution and depict how the sampling distribution picks up this asymmetry so that it is even visible for a sample size of $n=100$.
+To stress again the importance of a sufficient sample size, the following plots sample from a highly right skewed distribution and depict how the sampling distribution picks up this asymmetry so that it is even visible for a sample size of $n=100$.
 
 ```{r}
 unit <- 100000
@@ -658,7 +657,7 @@ legend("topright", legend_labels, col = legend_col, lty = legend_lty)
 
 ### One-sample tests
 
-The final topic is hypothesis testing. For this I start with an example of a machine that produces pencils. The manufacturer of the machine claims it produces pencils of length 17 cm with a standard deviation of $\sigma = 1.5 \text{ cm}$, but a random sample $X$ of $n=9$ gives $\overline X = 17.8 \text{ cm}$. We use hypothesis testing to see whether the manufacturers claim of $\mu = 17 \text{ cm}$ holds.
+The final topic is hypothesis testing. For this I start with an example of a machine that produces pencils. The manufacturer of the machine claims it produces pencils of length 17 cm with a standard deviation of $\sigma = 1.5 \text{ cm}$, but a random sample $X$ of $n=9$ gives $\overline X = 17.8 \text{ cm}$. We use hypothesis testing to see whether the manufacturer's claim of $\mu = 17 \text{ cm}$ holds.
 
 First, I show a plot displaying the values from the sample, the sample mean $\overline X$, its confidence interval and $\mu$. Using `arrows()` with `angle = 90` makes the arrow heads to appear as vertical lines.
 
@@ -716,7 +715,7 @@ abline(v = Xbar, lty = "dashed", col = "red")
 
 text(Xbar, 0.15, substitute(P(bar(X) >= Xbar) == p,
                             list(Xbar=Xbar, p=sprintf("%.1f%%", p*100))),
-     adj = -0.02, col = "red")
+     adj = -0.27, col = "red")
 text(c(mu, z[2]), 0.035, c("95%", "2.5%"), adj = -0.25)
 text(z[1], 0.035, "2.5%", adj = 1.25)
 legend("topright", NULL, substitute(paste(sigma == s, " cm and ", n == nn),
@@ -823,7 +822,7 @@ text(1.3, 0.01, expression(P(bar(X) >= bar(x))))
 
 ### Exact binomial test
 
-The following two plots visualize how the p-value is calculated using the exact binomial test that can be used in case of count data and sometimes proportions. For this scenario, the example is a machine that is supposed to produce some items. The manufacturer of the machine claims that 90% of the time the machine produces flawless items, so in 10% of the time waste items are produced. A random sample of $n=100$ items is taken and $x=12$ of these are waste items. The task is to check the manufacturers claim: How likely is it get 12 waste items out of 100 items, if the probability of a waste item is 10% as the manufacturer promises? The process can be seen as a Bernoulli experiment where we define a waste item as "success" and hence we can use the exact binomial test with $x=12$, $p=0.1$ and $n=100$.
+The following two plots visualize how the p-value is calculated using the exact binomial test that can be used in case of count data and sometimes proportions. For this scenario, the example is a machine that is supposed to produce some items. The manufacturer of the machine claims that 90% of the time the machine produces flawless items, so in 10% of the time waste items are produced. A random sample of $n=100$ items is taken and $x=12$ of these are waste items. The task is to check the manufacturers claim: How likely is it to get 12 waste items out of 100 items, if the probability of a waste item is 10% as the manufacturer promises? The process can be seen as a Bernoulli experiment where we define a waste item as "success" and hence we can use the exact binomial test with $x=12$, $p=0.1$ and $n=100$.
 
 I first plot the density function of the binomial distribution with the given parameters under the null hypothesis and highlight the probabilities that add up to the p-value.
 
@@ -869,7 +868,7 @@ legend("topright", NULL,
 
 ### Two-sample tests
 
-For two-sample hypothesis tests, I'm using the built-in R dataset `PlantGrowth` but using only the control group and second treatment data.
+For two-sample hypothesis tests, I'm using the built-in R dataset `PlantGrowth`, but using only the control group and second treatment data.
 
 ```{r}
 pgreduced <- PlantGrowth[PlantGrowth$group != "trt1", ]  # remove data from first treatment
