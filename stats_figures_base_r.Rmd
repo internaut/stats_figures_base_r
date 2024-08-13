@@ -19,7 +19,6 @@ knitr::opts_chunk$set(echo = TRUE)
 
 TODOs:
 
-- explanations
 - proof-read
 - LICENSE
 - README
@@ -99,7 +98,7 @@ addlabel(mu, 0.0008, paste("Mean:", round(mu), "€"), "blue")
 
 ## From binomial to normal distribution (multiple plots, `curve()`, `legend()`)
 
-The following plots illustrate the transition from binomial to normal distribution when increasing $n$. I draw graphics for increasing values of $n$ in a `for`-loop^[Yes, there are situations where using a `for`-loop instead of vectorized operations, `lapply()`, etc. is fine and this is one of these situations since this loop doesn't generate or update values, but only causes side effects (drawing plots).] and additionally overlay the final plot with the corresponding normal distribution density function. I'm also using vertical lines via `plot()` with `type="h"` here instead of a bar plot, since the latter causes overplotting at high $n$. For each different $n$, I'm setting some graphical properties using the `xlim` and `lwd` lists. `curve()` is used for plotting the density function. It's very similar to a line plot with `plot()` and `type="l"`, but you directly pass the function that should be plotted and it takes care about generating the right $x_i$ values for it.
+The following plots illustrate the transition from binomial to normal distribution when increasing $n$. I draw graphics for increasing values of $n$ in a `for`-loop^[Yes, there are situations where using a `for`-loop instead of vectorized operations, `lapply()`, etc. is fine in R and this is one of these situations since this loop doesn't generate or update values, but only causes side effects (drawing plots).] and additionally overlay the final plot with the corresponding normal distribution density function. I'm also using vertical lines via `plot()` with `type="h"` here instead of a bar plot, since the latter causes overplotting at high $n$. For each different $n$, I'm setting some graphical properties using the `xlim` and `lwd` lists. `curve()` is used for plotting the density function. It's very similar to a line plot with `plot()` and `type="l"`, but you directly pass the function that should be plotted and it takes care about generating the right $x_i$ values for it.
 
 Usually it's better to use *ggplot2* or *lattice* when generating multiple graphics, i.e. as *facets* or *small multiples*. In this case, however, I need these plots as separate figures to be included in presentation slides.
 
@@ -412,7 +411,7 @@ text(mu, 0.0017, expression(mu), adj = c(-0.5, 0), col = 'red')
 
 I now draw $m=10$ random samples from the population, each consisting of $n=30$ data points. For each of the $m$ samples, the mean $\hat \mu_i$ is calculated and depicted in a *dot plot* via `dotchart()` together with the mean $\overline{\hat \mu}$ of all samples.
 
-```{r}
+```{r, fig.width=10, fig.height=5}
 n <- 30
 m <- 10
 
@@ -567,6 +566,10 @@ for (n in c(10, 100, 1000)) {
 
 ## Confidence intervals
 
+To show how confidence intervals for the sample mean work, I draw multiple random samples from the rent dataset (considered the "population" here), calculate their confidence intervals and check whether the interval covers the true population mean $\mu$. This is done for three different confidence levels using the same scale on the x-axis. It shows that increasing the confidence interval widens the confidence interval so that it more reliably captures the (actually unknown) population mean, but at the same time leads to less precise results. The confidence intervals are calculated under the assumption that the true standard deviation of the population $\sigma$ is known.
+
+The last `legend()` call shows another R quirk: If you're using `substitute()` in a legend label, you cannot write `legend("bottomright", substitute(...))`, you *have to* explicitly set the second parameter to `NULL`: `legend("bottomright", NULL, substitute(...))`. Otherwise you will get an *argument "legend" is missing, with no default* error. This is really odd, because using `expression()` instead of `substitute()` works without explicitly setting the second parameter to `NULL`, as can be seen in the previous `legend()` call.
+
 ```{r, fig.width=10, fig.height=10}
 set.seed(20231111)
 
@@ -579,13 +582,15 @@ sigma <- sqrt(mean((mu-rent)^2))
 m <- 100   # number of draws
 n <- 30    # sample size
 
+# function to draw sample of size `n` from `data` and calc. the
+# confidence interval using normal distrib. quantile `z`;
+# pop. standard dev. is assumed to be `sigma`
 sample_conf_interval <- function(i, data, n, sigma, z) {
     X <- sample(data, size = n)
     Xbar <- mean(X)
     E <- z * sigma/sqrt(n)
     c(Xbar - E, Xbar + E)
 }
-
 
 for (gamma in c(0.8, 0.95, 0.99)) {   # confidence levels
     alpha <- 1 - gamma    # significance level
@@ -605,27 +610,36 @@ for (gamma in c(0.8, 0.95, 0.99)) {   # confidence levels
     mu_covered <- conf_ints[,1] < mu &  mu < conf_ints[,2]
     conf_int_col <- ifelse(mu_covered, "black", "red")
     segments(conf_ints[,1], 1:m, conf_ints[,2], 1:m, col = conf_int_col)
+    n_covered <- sum(mu_covered)
     legend("topright", c(expression(paste("Confidence interval covers ", mu)),
                          expression(paste("Confidence interval doesn't cover ", mu))),
            lty = "solid",
            col = c("black", "red"))
+    legend("bottomright", NULL,
+           substitute(paste(x, " confidence intervals out of ", m, " cover ", mu),
+                      list(x=n_covered, m=m)),
+           x.intersp = 0, text.col = "red", box.col = "red")
 }
 ```
 
 ## Student's t distribution
 
+This plot shows the density function of the *t* distribution with different degrees of freedom together with the standard normal distribution for comparison.
+
 ```{r}
+# first plot the standard normal distribution density function
 curve(dnorm, lwd = 2, n = 1001, from = -5, to = 5,
       lty = "dashed",
       main = expression(paste(italic(t), " distributions and the standard normal distribution")),
       xlab = "x",
       ylab = "f(x)")
 
+# add t distribution with different df parameter values;
+# collect labels and styles for legend in `legend_*` variables
 nvals <- c(2, 5, 15)
 legend_labels <- c("N(0, 1)")
 legend_col <- c(gray(0))
 legend_lty <- c("dashed")
-
 for (i in 1:length(nvals)) {
     n <- nvals[i]
     col <- gray(1-0.2*i)
@@ -644,7 +658,11 @@ legend("topright", legend_labels, col = legend_col, lty = legend_lty)
 
 ### One-sample tests
 
-```{r}
+The final topic is hypothesis testing. For this I start with an example of a machine that produces pencils. The manufacturer of the machine claims it produces pencils of length 17 cm with a standard deviation of $\sigma = 1.5 \text{ cm}$, but a random sample $X$ of $n=9$ gives $\overline X = 17.8 \text{ cm}$. We use hypothesis testing to see whether the manufacturers claim of $\mu = 17 \text{ cm}$ holds.
+
+First, I show a plot displaying the values from the sample, the sample mean $\overline X$, its confidence interval and $\mu$. Using `arrows()` with `angle = 90` makes the arrow heads to appear as vertical lines.
+
+```{r, fig.width=10, fig.height=4}
 mu <- 17
 X <- c(16.4, 19.4, 17.8, 16.4, 18.5, 19.0, 19.5, 17.1, 16.1)
 Xbar <- mean(X)
@@ -655,16 +673,15 @@ confint <- paste0(round(z, 2), "cm")
 plot(X, runif(n), ylim = c(-0.5, 1.5), yaxt = "n",
      ylab = "", xlab = "Pencil length in cm",
      main = "Random sample of pencil lengths and 95% confidence interval")
-abline(h = 0.5)
 abline(v = mu, lty = "dashed")
 text(mu, -0.45, expression(mu), adj = -0.5)
-segments(z[1], -0.1, z[2], -0.1, col = "red")
-segments(z[1], -0.05, z[1], -0.15, col = "red")
-segments(z[2], -0.05, z[2], -0.15, col = "red")
-segments(Xbar, -0.05, Xbar, -0.15, col = "red")
+arrows(z[1], -0.1, z[2], -0.1, col = "red", length = 0.08, code = 3, angle = 90)
+points(Xbar, -0.1, pch = 3, col = "red")
 text(c(z, Xbar), 0.075, c(confint, paste0(Xbar, "cm")), col = "red")
 text(Xbar, -0.45, expression(bar(X)), col = "red")
 ```
+
+The next plot shows the hypothesized distribution of the sample mean under the null hypothesis $H_0$ that $\mu = 17 \text{ cm}$ for the given example. I shade the regions of rejection at the tails of the distribution and also display the area under the curve representing the p-value, i.e. the probability that we see a sample mean of $\overline X = 17.8 \text{ cm}$ or higher, given that the null hypothesis is true.
 
 ```{r}
 X <- c(16.4, 19.4, 17.8, 16.4, 18.5, 19.0, 19.5, 17.1, 16.1)
@@ -677,8 +694,7 @@ p <- 1-pnorm(Xbar, mu, sigma)
 x <- seq(15, 19, length = 1001)
 y <- dnorm(x, mu, sigma)
 plot(x, y, type = "l", xlab = "Pencil length in cm", ylab = "f(x)",
-     main = expression(paste("Distribution of ", bar(X), " around ", mu, "=17cm under ", H[0],
-                             " (", sigma, "=1.5cm and n=9)")))
+     main = expression(paste("Distribution of ", bar(X), " around ", mu, "=17cm under ", H[0])))
 
 iv <- x < z[1]
 polygon(c(x[iv][1], x[iv], max(x[iv])),
@@ -703,7 +719,11 @@ text(Xbar, 0.15, substitute(P(bar(X) >= Xbar) == p,
      adj = -0.02, col = "red")
 text(c(mu, z[2]), 0.035, c("95%", "2.5%"), adj = -0.25)
 text(z[1], 0.035, "2.5%", adj = 1.25)
+legend("topright", NULL, substitute(paste(sigma == s, " cm and ", n == nn),
+                                    list(s = sigma, nn = n)))
 ```
+
+A similar plot as above, showing the relationship of hypothesis tests with confidence intervals:
 
 ```{r}
 X <- c(16.4, 19.4, 17.8, 16.4, 18.5, 19.0, 19.5, 17.1, 16.1)
@@ -717,17 +737,18 @@ z <- qnorm(c(0.025, 0.975), mean = Xbar, sd = sigma)
 konfint <- paste0(round(z, 2), "cm")
 
 plot(x, y, type = "l", xlab = "Pencil length in cm", ylab = "f(x)",
-     main = expression(paste("Distribution of ", bar(X), " around ", mu, "=17cm under ", H[0],
-                             " (", sigma, "=1.5cm and n=9)")))
+     main = expression(paste("Distribution of ", bar(X), " around ", mu, "=17cm under ", H[0])))
 abline(v = mu, lty = "dashed")
 text(mu, 0.1, expression(mu), adj = -0.5)
-segments(z[1], -0.015, z[2], -0.015, col = "red")
-segments(z[1], -0.01, z[1], -0.02, col = "red")
-segments(z[2], -0.01, z[2], -0.02, col = "red")
-segments(Xbar, -0.01, Xbar, -0.02, col = "red")
+arrows(z[1], -0.01, z[2], -0.01, col = "red", length = 0.08, code = 3, angle = 90)
+points(Xbar, -0.01, pch = 3, col = "red")
 text(c(z, Xbar), 0.025, c(konfint, paste0(Xbar, "cm")), col = "red")
 text(Xbar, 0.07, expression(bar(X)), col = "red")
+legend("topright", NULL, substitute(paste(sigma == s, " cm and ", n == nn),
+                                    list(s = sigma, nn = n)))
 ```
+
+The following plots visualize the p-value for one-sided and two-sided tests as area under the hypothesized sampling distribution given the null hypothesis and different scenarios.
 
 ```{r}
 x <- seq(-4, 4, length = 1001)
@@ -767,7 +788,7 @@ text(1.3, 0.01, expression(P(bar(X) >= bar(x))))
 x <- seq(-4, 4, length = 1001)
 y <- dnorm(x)
 plot(x, y, type = "l", xlab = "", ylab = "Density",
-     main = expression(paste("Two-sided test: Sample mean is ", bar(x) < mu[0])),
+     main = expression(paste("Two-sided test: sample mean is ", bar(x) < mu[0])),
      xaxt = "n")
 p <- 0.3
 z <- qnorm(p)
@@ -786,7 +807,7 @@ text(-1.5, 0.01, expression(P(bar(X) <= bar(x))))
 x <- seq(-4, 4, length = 1001)
 y <- dnorm(x)
 plot(x, y, type = "l", xlab = "", ylab = "Density",
-     main = expression(paste("Two-sided test: Sample mean is ", bar(x) > mu[0])),
+     main = expression(paste("Two-sided test: sample mean is ", bar(x) > mu[0])),
      xaxt = "n")
 abline(v = 0, lty = "dashed")
 z <- qnorm(1-p)
@@ -800,13 +821,18 @@ polygon(c(x[iv][1], x[iv], max(x[iv])),
 text(1.3, 0.01, expression(P(bar(X) >= bar(x))))
 ```
 
+### Exact binomial test
+
+The following two plots visualize how the p-value is calculated using the exact binomial test that can be used in case of count data and sometimes proportions. For this scenario, the example is a machine that is supposed to produce some items. The manufacturer of the machine claims that 90% of the time the machine produces flawless items, so in 10% of the time waste items are produced. A random sample of $n=100$ items is taken and $x=12$ of these are waste items. The task is to check the manufacturers claim: How likely is it get 12 waste items out of 100 items, if the probability of a waste item is 10% as the manufacturer promises? The process can be seen as a Bernoulli experiment where we define a waste item as "success" and hence we can use the exact binomial test with $x=12$, $p=0.1$ and $n=100$.
+
+I first plot the density function of the binomial distribution with the given parameters under the null hypothesis and highlight the probabilities that add up to the p-value.
+
 ```{r}
 n <- 100
 p <- 0.1
 k <- 12
-p_less_k <- round(pbinom(11, 100, 0.1), 3)
+p_less_k <- round(pbinom(k-1, n, p), 3)
 p_ge_k <- 1 - p_less_k
-subst_params <- list(p_less_k=p_less_k, p_ge_k=p_ge_k)
 x <- 0:100
 y <- dbinom(x, n, p)
 
@@ -815,14 +841,15 @@ barplot(y ~ x, axis.lty = 1, col = barcols,
         xlab = "Number x of waste items",
         ylab = "Probability P(X=x)",
         main = "Probability of number of waste items under the null hypothesis")
-legend("topright",
-       c(expression(paste("Number of waste items " < 12)),
-         expression(paste("Number of waste items " >= 12))),
+legend("topright", NULL,
+       c(substitute(paste("Number of waste items " < k), list(k = k)),
+         substitute(paste("Number of waste items " >= k), list(k = k))),
        fill = c("gray", "orange"))
-text(34, 0.04, substitute(P(X >= 12) == p, list(p = p_ge_k)), adj = 0)
+text(34, 0.04, substitute(P(X >= k) == p, list(k = k, p = p_ge_k)), adj = 0)
 arrows(33, 0.039, 20, 0.03, length = 0.1)
 ```
 
+I also show the distribution function of the binomial distribution with the given parameters under the null hypothesis and highlight the complement of the p-value.
 
 ```{r}
 x <- 0:100
@@ -833,22 +860,26 @@ barplot(y, names.arg = as.character(x), axis.lty = 1,
         col = barcols,
         xlab = "Number x of waste items",
         ylab = expression(paste("Probability ", P(X <= x))),
-        main = "Probability of number of waste items under the null hypothesis")
+        main = "Probability of number of flawless items under the null hypothesis")
 
-legend("topright",
-       expression(paste("Probability ", P(X <= 11))),
+legend("topright", NULL,
+       substitute(paste("Probability ", P(X <= x)), list(x = k - 1)),
        fill = "red")
 ```
 
 ### Two-sample tests
 
+For two-sample hypothesis tests, I'm using the built-in R dataset `PlantGrowth` but using only the control group and second treatment data.
+
 ```{r}
-pgreduced <- PlantGrowth[PlantGrowth$group != "trt1", ]
+pgreduced <- PlantGrowth[PlantGrowth$group != "trt1", ]  # remove data from first treatment
 pgreduced$group <- factor(pgreduced$group)
 boxplot(weight ~ group, data = pgreduced,
         xlab = "Group", ylab = "Dried weight of plants in kg",
         main = "Plant growth experiment")
 ```
+
+The following plot depicts the theoretical distribution of sample means for the treatment data $X$ and control data $Y$. I'm using `points()` with a little random jitter to also show the individual data points.
 
 ```{r}
 ctrl <- pgreduced$group == "ctrl"
@@ -864,7 +895,8 @@ se_y <- sd(w_ctrl) / sqrt(ny)
 
 x <- seq(4, 6.5, length = 1001)
 y_trt2 <- dnorm(x, mean = xbar, sd = se_x)
-plot(w_trt2, runif(nx, 0, 0.1), col = "darkred", xlim = c(min(x), max(x)), ylim = c(0, 3),
+plot(w_trt2, runif(nx, 0, 0.1), col = "darkred",
+     xlim = c(min(x), max(x)), ylim = c(0, 3),
      xlab = "Dried weight of plants in kg", ylab = "Density",
      main = "Plant growth experiment\nDistribution of sample means")
 points(w_ctrl, runif(ny, 0, 0.1), col = "blue")
@@ -878,6 +910,8 @@ text(ybar, 0.15, substitute(bar(Y) == ybar, list(ybar = paste0(ybar, "kg"))), po
 legend("topright", c("X: treatment", "Y: control"),
        lty = "solid", col = c("darkred", "blue"))
 ```
+
+I plot the distribution of the difference in sample means, $\overline X - \overline Y$ under the null hypothesis that the treatment doesn't work, i.e. that the treatment produces equal or less yield: $\mu_X \le \mu_Y$. The shown density function is that of a *t* distribution for the respective degrees of freedom, but scaled for difference in kg instead of t-values. The data points for the actual differences are again plotted with a little jitter and the area under the curve that represents the p-value is shaded in red.
 
 ```{r}
 w_ttest_res <- t.test(w_trt2, w_ctrl, alternative = "greater")
@@ -913,6 +947,8 @@ text(dbar_tscale + 0.25, 0.025, substitute(P(bar(X) - bar(Y) > dbar) == p,
      pos = 4, col = "red")
 ```
 
+The following plot shows the same picture as before, but using t-values / standard units instead of the difference in kg.
+
 ```{r}
 x <- seq(xmin, xmax, length.out = 1001)
 y <- dt(x, w_ttest_res$parameter)
@@ -934,6 +970,8 @@ text(dbar_tscale + 0.25, 0.025, substitute(1-P(t < tval) == pval,
                                                 pval = round(w_ttest_res$p.value, 4))),
      pos = 4, col = "red")
 ```
+
+Finally, I show a figure that depicts the probability of making type I error (i.e. rejecting the null hypothesis when it is actually true) in the case of multiple tests.
 
 ```{r}
 alpha <- 0.05
