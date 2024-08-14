@@ -21,6 +21,8 @@ knitr::opts_chunk$set(echo = TRUE)
 
 This notebook contains code and figures for statistics and data science education. It stems from a statistics course I gave a the [HTW Berlin](https://www.htw-berlin.de/). All figures are generated with base R plotting functions and no additional packages are required. This notebook may be useful for people in statistics or data science education and for those who want to learn more about (advanced) base R plotting and mathematical annotations in R plots. Each section title below mentions in parentheses new techniques or concepts which are introduced in the section. Most plots are not self-explanatory – they are intended to be used in class for illustration and discussion.
 
+You can find the [source code repository for this project on GitHub](https://github.com/internaut/stats_figures_base_r/). The code is licensed under [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0). See [LICENSE](https://github.com/internaut/stats_figures_base_r/blob/master/LICENSE) file.
+
 ## Binomial distribution (barplots, formula notation, mathematical expressions)
 
 I start with the binomial distribution. Since it is a discrete probability distribution, I use a bar plot via `barplot()`. I find the formula notation best when using this function. You simply provide a vector of *x* and *y* values and the formula notation `y ~ x` will hence plot bars of height $y_i$ for each corresponding $x_i$.
