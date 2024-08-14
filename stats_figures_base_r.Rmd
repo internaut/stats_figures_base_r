@@ -17,14 +17,6 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-TODOs:
-
-- LICENSE
-- README
-- create repo
-- link to repo
-- deploy
-
 ## Introduction
 
 This notebook contains code and figures for statistics and data science education. It stems from a statistics course I gave a the [HTW Berlin](https://www.htw-berlin.de/). All figures are generated with base R plotting functions and no additional packages are required. This notebook may be useful for people in statistics or data science education and for those who want to learn more about (advanced) base R plotting and mathematical annotations in R plots. Each section title below mentions in parentheses new techniques or concepts which are introduced in the section. Most plots are not self-explanatory – they are intended to be used in class for illustration and discussion.
